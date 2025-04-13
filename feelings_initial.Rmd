@@ -5,7 +5,7 @@ date: "2025-04-13"
 ---
 
 ```{r}
-feelings_initial <- load("/Users/emma/Desktop/RA/Silvia_Stanford/feelings_initial.RData")
+feelings_initial <- load("/Users/emma/Desktop/RA/Silvia_Stanford/Feelings_initial_Stanford/feelings_initial.RData")
 ls()
 ```
 
