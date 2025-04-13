@@ -1,20 +1,20 @@
 # Feelings_initial_Stanford
 
-**Dataset Overview:**
+## Dataset Overview:
 Emotional response data from 156 participants across 105 trials each. 
 
 - The participants were shown various emotional images (negative, neutral, and positive)
 
 - Their emotional responses were recorded for three different measures: Negative Emotional Response (Ineg), Positive Emotional Response (Ipos), and Arousal Response (Iaro).
 
-**Data Structure:**
+## Data Structure:
 - `dat`: A long-format dataset with 16,380 (156x105) observations and 9 variables.
 
 - Each row represents a single observation of a participant's emotional response to a specific trial.
 
-**Variables:**
+## Datasets:
 
-***dat***:
+`dat`:
 
 - subj: Participant ID (156 unique participants).
 
@@ -35,8 +35,7 @@ Emotional response data from 156 participants across 105 trials each.
 - Iaro: Arousal Response to the image (numerical score).
 
 
-***Iaro_wide, Ineg_wide, Ipos_wide***:
-Wide-format datasets: 
+`Iaro_wide, Ineg_wide, Ipos_wide` (wide-format datasets)
 
 - Each with 156 participants across 105 trial conditions. 
 
@@ -46,8 +45,9 @@ Wide-format datasets:
 
 - Iaro_wide: Contains Arousal Response (Iaro) scores for all participants across the 106 trials.
 
-**Data Usage:**
-This dataset can be used to explore how participants respond emotionally to various stimuli (negative, positive, neutral images) and to compare these responses across different trials and participant characteristics (e.g., gender, age, ethnicity).
+## Data Usage:
 
-Researchers can perform statistical analyses (e.g., ANOVA, regression analysis) to identify patterns and differences in emotional responses based on the trial type or participant demographics.
+Explore how participants respond emotionally to various stimuli (negative, positive, neutral images) and to compare these responses across different trials and participant characteristics (e.g., gender, age, ethnicity).
+
+Perform statistical analyses (e.g., ANOVA, regression analysis) to identify patterns and differences in emotional responses based on the trial type or participant demographics.
 
