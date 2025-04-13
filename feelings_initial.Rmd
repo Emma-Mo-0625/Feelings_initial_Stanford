@@ -1,0 +1,23 @@
+---
+title: "Feelings_initial"
+output: html_document
+date: "2025-04-13"
+---
+
+```{r}
+feelings_initial <- load("/Users/emma/Desktop/RA/Silvia_Stanford/feelings_initial.RData")
+ls()
+```
+
+```{r}
+summary(feelings_initial)
+```
+
+```{r}
+str(dat)
+```
+
+```{r}
+str(Iaro_wide)
+```
+
