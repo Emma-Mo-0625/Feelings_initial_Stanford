@@ -18,6 +18,82 @@ str(dat)
 ```
 
 ```{r}
-str(Iaro_wide)
+head(Iaro_wide)
 ```
+
+```{r}
+head(Ineg_wide)
+```
+
+```{r}
+head(Ipos_wide)
+```
+
+
+## Descriptive statistics
+
+```{r}
+summary(dat[, c("Ineg", "Ipos", "Iaro")])
+```
+
+```{r}
+# identify NAs
+colSums(is.na(dat))
+```
+
+There are no NAs in the dataset.
+
+```{r}
+# identify outliers using z-score
+
+# Calculate Z-scores for Ineg, Ipos, and Iaro
+dat$z_Ineg <- scale(dat$Ineg)
+dat$z_Ipos <- scale(dat$Ipos)
+dat$z_Iaro <- scale(dat$Iaro)
+
+# Identify outliers (Z-score > 3 or < -3)
+outliers_Ineg <- dat[abs(dat$z_Ineg) > 3, ]
+outliers_Ineg
+outliers_Ipos <- dat[abs(dat$z_Ipos) > 3, ]
+outliers_Ipos
+outliers_Iaro <- dat[abs(dat$z_Iaro) > 3, ]
+outliers_Iaro
+
+```
+
+There are no outliers.
+
+## Mixed-effects model: analyze data with repeated measures
+
+- Each participant has multiple trials, so the trials within a participant are likely correlated
+- Data is nested
+- Each participant may have their own baseline level of emotional responses
+
+```{r}
+library(lme4)
+
+# Mixed-effects model for predicting Ineg
+model_ineg <- lmer(Ineg ~ trial.val + sex + age + ethn + (1|subj), data = dat)
+summary(model_ineg)
+
+```
+
+```{r}
+# Mixed-effects model for predicting Ipos
+model_ipos <- lmer(Ipos ~ trial.val + sex + age + ethn + (1|subj), data = dat)
+summary(model_ipos)
+```
+
+```{r}
+# Mixed-effects model for predicting Iaro
+model_aro <- lmer(Iaro ~ trial.val + sex + age + ethn + (1|subj), data = dat)
+summary(model_aro)
+```
+
+
+- fixed effects (trial.val, sex, age, ethn) explain the variation between individuals
+- random effects (1|subj) explain the correlation of repeated measures within individuals
+
+
+
 
