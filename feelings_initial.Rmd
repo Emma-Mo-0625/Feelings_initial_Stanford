@@ -69,6 +69,9 @@ There are no outliers.
 - Data is nested
 - Each participant may have their own baseline level of emotional responses
 
+- fixed effects (trial.val, sex, age, ethn) explain the variation between individuals
+- random effects (1|subj) explain the correlation of repeated measures within individuals
+
 ```{r}
 library(lme4)
 
@@ -78,11 +81,35 @@ summary(model_ineg)
 
 ```
 
+- Random effects: each participant has a different baseline emotional response
+  - `(1|subj)`: represents the random effect 
+    - each participant (subj) has a different baseline deviation (intercept). 
+    - This accounts for the correlation between multiple trial results from the same participant
+- `REML score` (residual maximum likelihood estimate): assess the model fit
+- Fixed Effects:
+  - Intercept: Negative trial
+  - `trial.valneu` (Neutral trial): Estimate = -4.08, t = -118.57, a very significant negative value. 
+    - Compared to the baseline (negative trial), the neutral trial significantly decreases negative emotions (Ineg)
+  - `trial.valpos` (Positive trial): Estimate = -4.09, t = -168.08, also significant. 
+    - the positive trial also significantly decreases negative emotions compared to the negative trial
+  - sexfemale: Estimate = 0.317543, t = 2.606. 
+    - Females have significantly higher negative emotional responses (Ineg) compared to males
+  - The effects of age and ethnicity are small and not significant
+
+
 ```{r}
 # Mixed-effects model for predicting Ipos
 model_ipos <- lmer(Ipos ~ trial.val + sex + age + ethn + (1|subj), data = dat)
 summary(model_ipos)
 ```
+
+- Intercept (negative trial): estimate = 0.72, t-value = 1.56. The effect of negative trial on positive emotions (Ipos) is small.
+- `trial.valneu`: estimate = 0.34, t-value = 9.48. Compared to valneg, the neutral trial significantly increases positive emotions (Ipos).
+- `trial.valpos`: estimate = 4.03, t-value = 160.64. Compared to valneg, the positive trial largely increases positive emotions (Ipos), and the effect is extremely significant.
+- `sexfemale`: estimate = 0.20, t = 1.58. Females tend to have slightly higher positive emotional responses than males.
+- `ethnAmerican Indian/Native American or Alaskan Native`: estimate = -0.94, t = -2.30. This ethnicity tends to have significantly lower positive emotional responses compared to the reference group.
+- `trial.valneu` and `trial.valpos` have a correlation of 0.354, showing that the effects of neutral and positive trials are somewhat related.
+
 
 ```{r}
 # Mixed-effects model for predicting Iaro
@@ -90,10 +117,10 @@ model_aro <- lmer(Iaro ~ trial.val + sex + age + ethn + (1|subj), data = dat)
 summary(model_aro)
 ```
 
-
-- fixed effects (trial.val, sex, age, ethn) explain the variation between individuals
-- random effects (1|subj) explain the correlation of repeated measures within individuals
-
+- Intercept (negative trial): estimate = 2.93, t-value = 3.84. The effect of negative trial on arousal (Iaro) is moderate.
+- `trial.valneu`: estimate -2.26, t-value = -64.28. Compared to `valneg`, the neutral trial significantly decreases arousal (Iaro), which can be expected.
+- `trial.valpos`: estimate = -0.30, t-value = -12.10. Compared to `valneg`, the positive trial also significantly decreases arousal (Iaro), but the effect is small.
+- Other fixed effects are not significant.
 
 
 

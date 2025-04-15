@@ -526,11 +526,15 @@ outliers_Iaro</code></pre>
 <div id="mixed-effects-model-analyze-data-with-repeated-measures" class="section level2">
 <h2>Mixed-effects model: analyze data with repeated measures</h2>
 <ul>
-<li>Each participant has multiple trials, so the trials within a
-participant are likely correlated</li>
-<li>Data is nested</li>
-<li>Each participant may have their own baseline level of emotional
-responses</li>
+<li><p>Each participant has multiple trials, so the trials within a
+participant are likely correlated</p></li>
+<li><p>Data is nested</p></li>
+<li><p>Each participant may have their own baseline level of emotional
+responses</p></li>
+<li><p>fixed effects (trial.val, sex, age, ethn) explain the variation
+between individuals</p></li>
+<li><p>random effects (1|subj) explain the correlation of repeated
+measures within individuals</p></li>
 </ul>
 <pre class="r"><code>library(lme4)</code></pre>
 <pre><code>## Loading required package: Matrix</code></pre>
@@ -606,6 +610,43 @@ summary(model_ineg)</code></pre>
 ## ethnWht/Ccs              
 ## ethAI/NAoAN  0.271       
 ## ethnDclntst  0.211  0.092</code></pre>
+<ul>
+<li>Random effects: each participant has a different baseline emotional
+response
+<ul>
+<li><code>(1|subj)</code>: represents the random effect
+<ul>
+<li>each participant (subj) has a different baseline deviation
+(intercept).</li>
+<li>This accounts for the correlation between multiple trial results
+from the same participant</li>
+</ul></li>
+</ul></li>
+<li><code>REML score</code> (residual maximum likelihood estimate):
+assess the model fit</li>
+<li>Fixed Effects:
+<ul>
+<li>Intercept: Negative trial</li>
+<li><code>trial.valneu</code> (Neutral trial): Estimate = -4.08, t =
+-118.57, a very significant negative value.
+<ul>
+<li>Compared to the baseline (negative trial), the neutral trial
+significantly decreases negative emotions (Ineg)</li>
+</ul></li>
+<li><code>trial.valpos</code> (Positive trial): Estimate = -4.09, t =
+-168.08, also significant.
+<ul>
+<li>the positive trial also significantly decreases negative emotions
+compared to the negative trial</li>
+</ul></li>
+<li>sexfemale: Estimate = 0.317543, t = 2.606.
+<ul>
+<li>Females have significantly higher negative emotional responses
+(Ineg) compared to males</li>
+</ul></li>
+<li>The effects of age and ethnicity are small and not significant</li>
+</ul></li>
+</ul>
 <pre class="r"><code># Mixed-effects model for predicting Ipos
 model_ipos &lt;- lmer(Ipos ~ trial.val + sex + age + ethn + (1|subj), data = dat)
 summary(model_ipos)</code></pre>
@@ -678,6 +719,24 @@ summary(model_ipos)</code></pre>
 ## ethnWht/Ccs              
 ## ethAI/NAoAN  0.271       
 ## ethnDclntst  0.211  0.092</code></pre>
+<ul>
+<li>Intercept (negative trial): estimate = 0.72, t-value = 1.56. The
+effect of negative trial on positive emotions (Ipos) is small.</li>
+<li><code>trial.valneu</code>: estimate = 0.34, t-value = 9.48. Compared
+to valneg, the neutral trial significantly increases positive emotions
+(Ipos).</li>
+<li><code>trial.valpos</code>: estimate = 4.03, t-value = 160.64.
+Compared to valneg, the positive trial largely increases positive
+emotions (Ipos), and the effect is extremely significant.</li>
+<li><code>sexfemale</code>: estimate = 0.20, t = 1.58. Females tend to
+have slightly higher positive emotional responses than males.</li>
+<li><code>ethnAmerican Indian/Native American or Alaskan Native</code>:
+estimate = -0.94, t = -2.30. This ethnicity tends to have significantly
+lower positive emotional responses compared to the reference group.</li>
+<li><code>trial.valneu</code> and <code>trial.valpos</code> have a
+correlation of 0.354, showing that the effects of neutral and positive
+trials are somewhat related.</li>
+</ul>
 <pre class="r"><code># Mixed-effects model for predicting Iaro
 model_aro &lt;- lmer(Iaro ~ trial.val + sex + age + ethn + (1|subj), data = dat)
 summary(model_aro)</code></pre>
@@ -751,10 +810,15 @@ summary(model_aro)</code></pre>
 ## ethAI/NAoAN  0.271       
 ## ethnDclntst  0.211  0.092</code></pre>
 <ul>
-<li>fixed effects (trial.val, sex, age, ethn) explain the variation
-between individuals</li>
-<li>random effects (1|subj) explain the correlation of repeated measures
-within individuals</li>
+<li>Intercept (negative trial): estimate = 2.93, t-value = 3.84. The
+effect of negative trial on arousal (Iaro) is moderate.</li>
+<li><code>trial.valneu</code>: estimate -2.26, t-value = -64.28.
+Compared to <code>valneg</code>, the neutral trial significantly
+decreases arousal (Iaro), which can be expected.</li>
+<li><code>trial.valpos</code>: estimate = -0.30, t-value = -12.10.
+Compared to <code>valneg</code>, the positive trial also significantly
+decreases arousal (Iaro), but the effect is small.</li>
+<li>Other fixed effects are not significant.</li>
 </ul>
 </div>
 
