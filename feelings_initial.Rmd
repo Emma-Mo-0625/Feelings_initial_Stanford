@@ -125,4 +125,145 @@ summary(model_aro)
 - Other fixed effects are not significant.
 
 
+## Autoregressive Modeling
+
+Assign 1 overall inertia score for pos, neg, and aro for each participant:
+
+```{r}
+library(dplyr)
+library(purrr)
+library(broom)
+
+# Create a function to return inertia (lag-1 β value)
+get_inertia <- function(x) {
+  # Create lagged data
+  lag_x <- dplyr::lag(x)
+  df <- data.frame(current = x, lagged = lag_x)
+  df <- na.omit(df)
+  
+  # Linear regression: current ~ lagged
+  model <- lm(current ~ lagged, data = df)
+  coef(model)["lagged"]
+}
+
+# find inertia scores for the 3 emotions for each participant
+overall_inertia <- dat %>%
+  group_by(subj) %>%
+  summarise(
+    pos_inertia = get_inertia(Ipos),
+    neg_inertia = get_inertia(Ineg),
+    aro_inertia = get_inertia(Iaro)
+  )
+overall_inertia
+```
+
+For each of the 3 emotional reactions (pos, neg, aro), assign 1 inertia score for each of the 3 trial type (pos, neg, neu)
+
+```{r}
+library(tidyr)
+
+# For each subj × trial.val × emotion
+inertia_long <- dat %>%
+  group_by(subj, trial.val) %>%
+  summarise(
+    pos_inertia = get_inertia(Ipos),
+    neg_inertia = get_inertia(Ineg),
+    aro_inertia = get_inertia(Iaro),
+    .groups = "drop"
+  )
+
+# Reshape into wide format: 1 row per participant, 9 inertia scores
+inertia_wide <- inertia_long %>%
+  pivot_wider(
+    names_from = trial.val,
+    values_from = c(pos_inertia, neg_inertia, aro_inertia),
+    names_glue = "{.value}_{trial.val}"
+  )
+
+inertia_wide
+```
+
+```{r}
+# Find the reason of NAs
+
+# Whether there's not enough data for each subj × trial.val group
+
+dat %>%
+  group_by(subj, trial.val) %>%
+  summarise(n = n()) %>%
+  filter(n < 5)
+
+# Whether some emotion ratings for certain trial type are always the same
+
+dat %>%
+  group_by(subj, trial.val) %>%
+  summarise(
+    Ineg_var = var(Ineg),
+    Ipos_var = var(Ipos),
+    Iaro_var = var(Iaro)
+  ) %>%
+  filter(Ineg_var == 0 | Ipos_var == 0 | Iaro_var == 0)
+
+```
+
+NAs from inertia_wide are more than the number of Var=0.
+
+```{r}
+# Merge all inertia scores (by subj)
+inertia_all <- overall_inertia %>%
+  left_join(inertia_wide, by = "subj")
+inertia_all
+```
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(e1071)   # for skewness
+library(psych)   # for describe()
+
+# Convert to inertia_long format
+inertia_long <- inertia_all %>%
+  pivot_longer(-subj, names_to = "inertia_type", values_to = "inertia")
+
+# Distribution & Skewness
+inertia_long %>%
+  group_by(inertia_type) %>%
+  mutate(
+    skew = skewness(inertia, na.rm = TRUE),
+    normality_p = shapiro.test(inertia)$p.value
+  ) %>%
+  ggplot(aes(x = inertia)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  facet_wrap(~ inertia_type, scales = "free") +
+  theme_minimal() +
+  labs(title = "Histogram of Inertia Scores across Participants",
+       subtitle = "Check for skewness & normality visually")
+
+```
+
+```{r}
+# describe_stats for all 3 + 9 = 12 types of inertia
+describe_stats <- inertia_long %>%
+  group_by(inertia_type) %>%
+  summarise(
+    n = sum(!is.na(inertia)),
+    sd = sd(inertia, na.rm = TRUE),
+    Q1 = quantile(inertia, 0.25, na.rm = TRUE),
+    Q3 = quantile(inertia, 0.75, na.rm = TRUE),
+    skewness = skewness(inertia, na.rm = TRUE),
+    normality_p = shapiro.test(inertia)$p.value
+  )
+describe_stats
+```
+
+Inertia scores that are not normal:
+
+- neg_inertia_pos: normality_p = 6.689087e-10; skewness = 1.07982750
+- pos_inertia_neg: normality_p = 2.318693e-09; skewness = 1.27067898
+- pos_inertia_neu: normality_p = 8.436415e-08; skewness = -0.39896752
+- neg_inertia_neu: normality_p = 1.296106e-07; skewness = 1.29575508
+- aro_inertia_neu: normality_p = 3.859573e-05; skewness = 0.71497318
+
 
