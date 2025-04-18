@@ -284,4 +284,46 @@ inertia_long_normalized <- inertia_long %>%
 inertia_long_normalized
 ```
 
+```{r}
+# Find mean value of each of the 12 inertia types
+
+inertia_means <- inertia_long_normalized %>%
+  group_by(inertia_type) %>%
+  summarise(
+    mean_inertia = mean(inertia_trans, na.rm = TRUE),
+    sd_inertia = sd(inertia_trans, na.rm = TRUE),
+    n = sum(!is.na(inertia_trans))
+  ) %>%
+  arrange(desc(abs(mean_inertia)))
+
+inertia_means
+```
+
+- aro_inertia_neu: Extremely high SD (0.998) — suggests arousal inertia under neutral stimuli varies greatly across individuals
+- neg_inertia (mean = -0.024): Negative emotion inertia is slightly negative, meaning negative emotion is not likely to last
+- neg_inertia_pos: Negative near-zero mean (-9.32e-06) but very high variance (sd = 0.999); 
+
+  - Negative emotion is likely to bounce back after positive stimuli, but the effect is extremely small
+  - There's huge individual differences
+  
+- pos_inertia_neg: Negative near-zero mean (-3.28e-05) but very high variance (sd = 0.999);
+
+  - Positive emotion is likely to bounce back after negative stimuli, but the effect is also small
+  - There's huge individual differences
+
+- pos_inertia (mean = -0.032): negative mean — indicates that positive emotions tend to drop off quickly
+- aro_inertia_neg (mean = 0.031): clear positive inertia — arousal tends to linger more after negative stimuli
+- neg_inertia_neg (mean = 0.024): negative emotions tend to persist more after negative trials
+
+- **neg_inertia (mean = -0.024) vs. pos_inertia (mean = -0.032)**:
+
+  - **neg_inertia is bigger than pos_inertia, meaning that negative emotions tend to last longer**
+  - Positive emotions bounce back faster than negative emotions
+
+- **neg_inertia_pos (mean = -9.32e-06) vs. pos_inertia_neg (-3.28e-05)**:
+
+  - **Emotions tend to reset quickly when the stimulus is the opposite, meaning that people are likely to be affected by opposite stimuli**
+  - **Positive emotions may dissipate faster in response to negative stimuli than negative emotions do in response to positive ones (positive emotion is more likely to be affected by negative stimuli)**
+
+
 
