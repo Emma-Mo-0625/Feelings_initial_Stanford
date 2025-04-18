@@ -262,6 +262,8 @@ Inertia scores that are not normal:
   - For neutral stimuli, arousal inertia is right-skewed
 
 
+### Normalize the skewed inertia types
+
 ```{r}
 # Transform the skewed inertia types to normal
 library(bestNormalize)
@@ -283,6 +285,9 @@ inertia_long_normalized <- inertia_long %>%
 
 inertia_long_normalized
 ```
+
+
+### Compare means of the 12 inertia types
 
 ```{r}
 # Find mean value of each of the 12 inertia types
@@ -324,6 +329,84 @@ inertia_means
 
   - **Emotions tend to reset quickly when the stimulus is the opposite, meaning that people are likely to be affected by opposite stimuli**
   - **Positive emotions may dissipate faster in response to negative stimuli than negative emotions do in response to positive ones (positive emotion is more likely to be affected by negative stimuli)**
+
+
+
+### Compare inertia types by demographics
+
+```{r}
+# Pivot transformed inertia data to wide format
+
+inertia_wide_trans <- inertia_long_normalized %>%
+  select(subj, inertia_type, inertia_trans) %>%
+  tidyr::pivot_wider(
+    names_from = inertia_type,
+    values_from = inertia_trans
+  )
+
+# Extract demographic info from your original dat
+
+demo_info <- dat %>%
+  select(subj, sex, age, ethn) %>%
+  distinct()
+
+# Merge the transformed inertia data with demographics
+inertia_full <- inertia_wide_trans %>%
+  left_join(demo_info, by = "subj")
+inertia_full
+```
+
+
+```{r}
+# Inertia types by Sex / Ethnicity (categorical)
+
+# By sex
+inertia_full %>%
+  group_by(sex) %>%
+  summarise(across(starts_with("pos_inertia"):starts_with("aro_inertia"), ~mean(., na.rm = TRUE)))
+
+# Visualize
+ggplot(inertia_full, aes(x = sex, y = pos_inertia)) +
+  geom_boxplot() +
+  labs(title = "Positive Emotion Inertia by Sex")
+
+
+```
+
+- Females have much lower positive inertia (-0.043) than males (-0.021) -> quicker drop in positive feelings
+- Females have higher arousal inertia (0.019) than males (-0.011) -> more sustained arousal
+- It's surprising that neg_inertia is about the same for male and female, considering that females are twice as likely as males to get depression based on reports
+
+
+```{r}
+# By ethnicity
+inertia_full %>%
+  group_by(ethn) %>%
+  summarise(across(starts_with("pos_inertia"):starts_with("aro_inertia"), ~mean(., na.rm = TRUE)))
+```
+
+- American Indian/Native American or Alaskan Native: the only group with positive neg_inertia -> tend to stay in negative states longer
+- Black/African American: the only group with pos_inertia -> tend to stay in positive states longer (which is unexpected)
+- White/Caucasian: the only group with negative inertia across all three emotions -> tend to bounce back quickly overall (emotionally adaptive). 
+  - This may reflect greater access to resources, social safety nets, and less exposure to systemic stressors for White people.
+- Both "Other" and "Decline to state" have much higher aro_inertia than others. 
+  - This may suggest that the people who are less confident or more confused about their identities are likely to face heightened stress, social vigilance, or lack of belonging--all known to elevate arousal.
+
+
+```{r}
+# Inertia types by Age (continuous)
+
+inertia_full %>%
+  summarise(across(
+    starts_with("pos_inertia"):starts_with("aro_inertia"),
+    ~ cor(., age, use = "complete.obs")
+  ))
+```
+
+- As age increases, neg_inertia (-0.128) decreases more than pos_inertia (-0.011). 
+  - Negative emotions drop significantly faster with increasing age -> older participants are more resilient to negative emotions
+- Arousal shows a slight increase with age (0.029)
+
 
 
 
