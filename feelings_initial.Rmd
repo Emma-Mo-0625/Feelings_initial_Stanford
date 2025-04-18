@@ -19,18 +19,6 @@ summary(feelings_initial)
 str(dat)
 ```
 
-```{r}
-head(Iaro_wide)
-```
-
-```{r}
-head(Ineg_wide)
-```
-
-```{r}
-head(Ipos_wide)
-```
-
 
 ## Descriptive statistics
 
@@ -134,7 +122,7 @@ library(dplyr)
 library(purrr)
 library(broom)
 
-# Create a function to return inertia (lag-1 β value)
+# Create a function to return inertia (lag-1 beta value)
 get_inertia <- function(x) {
   # Create lagged data
   lag_x <- dplyr::lag(x)
@@ -186,14 +174,14 @@ inertia_wide
 ```{r}
 # Find the reason of NAs
 
-# Whether there's not enough data for each subj × trial.val group
+# Whether there's not enough data for each subj × trial.val group?
 
 dat %>%
   group_by(subj, trial.val) %>%
   summarise(n = n()) %>%
   filter(n < 5)
 
-# Whether some emotion ratings for certain trial type are always the same
+# Whether some emotion ratings for certain trial type are always the same?
 
 dat %>%
   group_by(subj, trial.val) %>%
@@ -206,7 +194,9 @@ dat %>%
 
 ```
 
-NAs from inertia_wide are more than the number of Var=0.
+- The reason of NAs is not due to insufficient data for each subj × trial.val group
+- NAs are also not likely to be caused by zero-variance of some emotion inertia ratings, since NAs from inertia_wide are more than the number of Var = 0.
+
 
 ```{r}
 # Merge all inertia scores (by subj)
@@ -261,9 +251,37 @@ describe_stats
 Inertia scores that are not normal:
 
 - neg_inertia_pos: normality_p = 6.689087e-10; skewness = 1.07982750
+  - Under positive stimuli, negative emotion inertia is right-skewed: a few individuals have unusually persistent negative emotions
 - pos_inertia_neg: normality_p = 2.318693e-09; skewness = 1.27067898
+  - Under negative stimuli, positive emotion inertia is strongly right-skewed: most people have low inertia in positive feelings, with a few showing strong inertia
 - pos_inertia_neu: normality_p = 8.436415e-08; skewness = -0.39896752
+  - For neutral stimuli, positive emotion inertia is slightly left-skewed
 - neg_inertia_neu: normality_p = 1.296106e-07; skewness = 1.29575508
+  - For neutral stimuli, negative emotion inertia is strongly right-skewed
 - aro_inertia_neu: normality_p = 3.859573e-05; skewness = 0.71497318
+  - For neutral stimuli, arousal inertia is right-skewed
+
+
+```{r}
+# Transform the skewed inertia types to normal
+library(bestNormalize)
+
+skewed_vars <- c(
+  "neg_inertia_pos", "pos_inertia_neg", "pos_inertia_neu",
+  "neg_inertia_neu", "aro_inertia_neu"
+)
+
+inertia_long_normalized <- inertia_long %>%
+  group_by(inertia_type) %>%
+  mutate(
+    inertia_trans = if_else(
+      inertia_type %in% skewed_vars,
+      orderNorm(inertia)$x.t,  # transform only these
+      inertia  # leave others unchanged
+    )
+  )
+
+inertia_long_normalized
+```
 
 
