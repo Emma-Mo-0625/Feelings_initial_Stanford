@@ -1,9 +1,13 @@
 ---
-title: "Feelings_initial"
+title: "Emotion Inertia Analysis"
+author: "Your Name"
 output:
-  pdf_document: default
-  html_document: default
-date: "2025-04-13"
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+fontsize: 11pt
+geometry: margin=1in
 ---
 
 ```{r}
