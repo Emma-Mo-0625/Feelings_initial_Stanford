@@ -1,6 +1,6 @@
 ---
 title: "Emotion Inertia Analysis"
-author: "Your Name"
+author: "Rongrong (Emma) Mo"
 output:
   pdf_document:
     toc: true
