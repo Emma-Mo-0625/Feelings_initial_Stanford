@@ -4,7 +4,7 @@ author: "Your Name"
 output:
   pdf_document:
     toc: true
-    toc_depth: 2
+    toc_depth: 3
     number_sections: true
 fontsize: 11pt
 geometry: margin=1in
@@ -57,7 +57,7 @@ outliers_Iaro
 
 There are no outliers.
 
-## Linear Mixed Effects Model: analyze data with repeated measures
+## Linear Mixed Effects Model: emotional responses by trial type & demographics
 
 - Each participant has multiple trials, so the trials within a participant are likely correlated
 - Data is nested
@@ -123,6 +123,8 @@ summary(model_aro)
 
 
 ## Autoregressive Modeling
+
+### Assign 12 inertia scores for each participant
 
 Assign 1 overall inertia score for pos, neg, and aro for each participant:
 
