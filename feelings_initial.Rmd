@@ -53,7 +53,7 @@ outliers_Iaro
 
 There are no outliers.
 
-## Mixed-effects model: analyze data with repeated measures
+## Linear Mixed Effects Model: analyze data with repeated measures
 
 - Each participant has multiple trials, so the trials within a participant are likely correlated
 - Data is nested
@@ -61,6 +61,8 @@ There are no outliers.
 
 - fixed effects (trial.val, sex, age, ethn) explain the variation between individuals
 - random effects (1|subj) explain the correlation of repeated measures within individuals
+
+### How different trial types & demographics affect negative emotional response (Ineg)?
 
 ```{r}
 library(lme4)
@@ -87,6 +89,8 @@ summary(model_ineg)
   - The effects of age and ethnicity are small and not significant
 
 
+### How different trial types & demographics affect positive emotional response (Ipos)?
+
 ```{r}
 # Mixed-effects model for predicting Ipos
 model_ipos <- lmer(Ipos ~ trial.val + sex + age + ethn + (1|subj), data = dat)
@@ -100,6 +104,7 @@ summary(model_ipos)
 - `ethnAmerican Indian/Native American or Alaskan Native`: estimate = -0.94, t = -2.30. This ethnicity tends to have significantly lower positive emotional responses compared to the reference group.
 - `trial.valneu` and `trial.valpos` have a correlation of 0.354, showing that the effects of neutral and positive trials are somewhat related.
 
+### How different trial types & demographics affect arousal emotional response (Iaro)?
 
 ```{r}
 # Mixed-effects model for predicting Iaro
@@ -332,7 +337,7 @@ inertia_means
 
 
 
-### Compare inertia types by demographics
+### Compare emotional inertia types (pos_inertia, neg_inertia, aro_inertia) by demographics
 
 ```{r}
 # Pivot transformed inertia data to wide format
@@ -373,8 +378,8 @@ ggplot(inertia_full, aes(x = sex, y = pos_inertia)) +
 
 ```
 
-- Females have much lower positive inertia (-0.043) than males (-0.021) -> quicker drop in positive feelings
-- Females have higher arousal inertia (0.019) than males (-0.011) -> more sustained arousal
+- **Females have much lower positive inertia (-0.043) than males (-0.021) -> quicker drop in positive feelings**
+- **Females have higher arousal inertia (0.019) than males (-0.011) -> more sustained arousal**
 - It's surprising that neg_inertia is about the same for male and female, considering that females are twice as likely as males to get depression based on reports
 
 
@@ -385,9 +390,9 @@ inertia_full %>%
   summarise(across(starts_with("pos_inertia"):starts_with("aro_inertia"), ~mean(., na.rm = TRUE)))
 ```
 
-- American Indian/Native American or Alaskan Native: the only group with positive neg_inertia -> tend to stay in negative states longer
-- Black/African American: the only group with pos_inertia -> tend to stay in positive states longer (which is unexpected)
-- White/Caucasian: the only group with negative inertia across all three emotions -> tend to bounce back quickly overall (emotionally adaptive). 
+- **American Indian/Native American or Alaskan Native: the only group with positive neg_inertia -> tend to stay in negative states longer**
+- **Black/African American: the only group with pos_inertia -> tend to stay in positive states longer (which is unexpected)**
+- **White/Caucasian: the only group with negative inertia across all three emotions -> tend to bounce back quickly overall (emotionally adaptive).**
   - This may reflect greater access to resources, social safety nets, and less exposure to systemic stressors for White people.
 - Both "Other" and "Decline to state" have much higher aro_inertia than others. 
   - This may suggest that the people who are less confident or more confused about their identities are likely to face heightened stress, social vigilance, or lack of belonging--all known to elevate arousal.
@@ -404,9 +409,142 @@ inertia_full %>%
 ```
 
 - As age increases, neg_inertia (-0.128) decreases more than pos_inertia (-0.011). 
-  - Negative emotions drop significantly faster with increasing age -> older participants are more resilient to negative emotions
+  - Negative emotions drop significantly faster with increasing age -> **older participants are more resilient to negative emotions**
 - Arousal shows a slight increase with age (0.029)
 
+### Compare the effect of inertia types (pos, neg, neu) by demographics
 
+```{r}
+# By sex
+inertia_full %>%
+  group_by(sex) %>%
+  summarise(across(("pos_inertia_neg"):("aro_inertia_pos"), ~ mean(., na.rm = TRUE)))
+
+```
+
+- pos_inertia_neg: male(0.1255) vs. female(-0.0984)
+  - **Females tend to lose positive emotions quickly in response to negative stimuli**
+- neg_inertia_pos: male (-0.0489) vs. female(0.0297)
+  - **Females are more likely to retain negative emotions even with positive stimuli -> showing difficulty to let go of negativity**
+- This may partly explain why females are more likely to get depression
+
+- Female: pos_inertia = -0.0432 vs. pos_inertia_neu = 0.0620
+  - **It's weird that pos_inertia shows that females generally lose positive emotions quickly, but pos_inertia_neu shows that females tend to retain positive emotions under neutral stimuli**
+
+```{r}
+# by age
+inertia_full %>%
+  summarise(across(("pos_inertia_neg"):("aro_inertia_pos"), ~ cor(., age, use = "complete.obs")))
+```
+
+### Correlation between inertia types
+
+```{r}
+inertia_core <- inertia_full %>%
+  select(subj, pos_inertia, neg_inertia, aro_inertia)
+cor_matrix <- cor(inertia_core[,-1], use = "complete.obs")
+cor_matrix
+```
+
+```{r}
+library(ggcorrplot)
+
+ggcorrplot(cor_matrix,
+           method = "circle",
+           type = "lower",
+           lab = TRUE,
+           title = "Correlation Among Emotional Inertia Types")
+
+```
+
+- `pos_inertia` and `neg_inertia` have moderate positive correlation: people who tend to hold onto positive emotions also tend to hold onto negative emotions, suggesting emotional stickiness
+- `aro_inertia` and `neg_inertia` have small-to-moderate positive correlation: those who hold onto negative emotions also tend to stay aroused longer
+
+
+## Manova: inertia types by sex
+
+How different inertia types (pos_inertia, neg_inertia, aro_inertia) vary by sex?
+
+```{r}
+manova_model <- manova(cbind(pos_inertia, neg_inertia, aro_inertia) ~ sex, data = inertia_full)
+summary(manova_model, test = "Wilks")
+
+```
+
+- Wilks' Lambda = 0.954 -> near 1, meaning the difference is small
+- P-value = 0.3056, which is not significant
+- Conclusion: **the difference of pos_inertia, neg_inertia, aro_inertia between sex is not significant**
+
+
+Test each inertia type separately:
+
+```{r}
+summary.aov(manova_model)
+```
+
+- Also shows not significant for each of the 3 inertia types
+
+## CLPM
+
+### Estimate inertia score of positive, negative, and arousal emotions
+
+```{r}
+library(lavaan)
+library(dplyr)
+
+clpm_data <- dat %>%
+  arrange(subj, trial.num) %>%
+  group_by(subj) %>%
+  mutate(
+    Ipos_lag1 = lag(Ipos),
+    Ineg_lag1 = lag(Ineg),
+    Iaro_lag1 = lag(Iaro)
+  ) %>%
+  filter(!is.na(Ipos_lag1))
+
+model_inertia <- '
+  # Autoregressive (inertia) paths
+  Ipos ~ a1 * Ipos_lag1
+  Ineg ~ a2 * Ineg_lag1
+  Iaro ~ a3 * Iaro_lag1
+'
+
+fit <- sem(model_inertia, data = clpm_data)
+summary(fit, standardized = TRUE, fit.measures = TRUE)
+```
+
+- Positive inertia (0.200) and negative inertia (0.202) are about the same. Negative is slightly higher than positive.
+- Arousal inertia (0.329) is much higher than the other two, meaning that arousal emotion is likely to persist.
+
+### Cross-lag paths (how one emotion affect another at the next time point)
+
+```{r}
+model_clpm <- '
+  # Autoregressive (inertia) paths
+  Ipos ~ a1 * Ipos_lag1
+  Ineg ~ a2 * Ineg_lag1
+  Iaro ~ a3 * Iaro_lag1
+  
+  # Cross-lagged paths
+  Ipos ~ b1 * Ineg_lag1 + b2 * Iaro_lag1
+  Ineg ~ c1 * Ipos_lag1 + c2 * Iaro_lag1
+  Iaro ~ d1 * Ipos_lag1 + d2 * Ineg_lag1
+'
+
+fit_clpm <- sem(model_clpm, data = clpm_data)
+summary(fit_clpm, standardized = TRUE, fit.measures = TRUE)
+```
+
+
+- Arousal inertia (0.414) is much higher than positive inertia (0.137) and negative inertia (0.143)
+- Ipos ~ Ineg_lag1 (0.165): negative emotion predicts positive emotion in the next moment, which might reflect emotional rebound
+- Ineg ~ Ipos_lag1 (0.173): positive emotion enhances negative emotion in the next moment, which might reflect emotional mix or trial order effect
+- Iaro ~ Ipos_lag1 (-0.043): positive emotion decreases arousal at the later stage
+- Iaro ~ Ineg_lag1 (-0.063): negative emotion decreases arousal at the later stage
+- Ipos ~ Iaro_lag1 and Ineg ~ Iaro_lag1 are not significant
+
+- Conclusion: 
+  - Both positive and negative emotions predict more of the opposite in the next moment — possibly due to Emotion regulation attempts, Rebound effects, and Task structure
+  - Arousal is influenced negatively by both positive and negative emotions — maybe a sign of emotional resolution or recovery
 
 
