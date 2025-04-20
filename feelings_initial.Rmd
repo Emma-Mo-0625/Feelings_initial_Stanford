@@ -522,6 +522,7 @@ summary(fit, standardized = TRUE, fit.measures = TRUE)
 - Positive inertia (0.200) and negative inertia (0.202) are about the same. Negative is slightly higher than positive.
 - Arousal inertia (0.329) is much higher than the other two, meaning that arousal emotion is likely to persist.
 
+
 ### Cross-lag paths (how one emotion affect another at the next time point)
 
 ```{r}
@@ -552,5 +553,63 @@ summary(fit_clpm, standardized = TRUE, fit.measures = TRUE)
 - Conclusion: 
   - Both positive and negative emotions predict more of the opposite in the next moment — possibly due to Emotion regulation attempts, Rebound effects, and Task structure
   - Arousal is influenced negatively by both positive and negative emotions — maybe a sign of emotional resolution or recovery
+
+
+### Difference in paths by sex
+
+```{r}
+# Group by sex
+
+fit_clpm_sex <- sem(model_clpm, 
+                    data = clpm_data, 
+                    group = "sex")
+summary(fit_clpm_sex, standardized = TRUE, fit.measures = TRUE)
+
+```
+
+- Most of the paths are similar between men and women
+- Only arousal inertia for women is slightly higher than men
+
+```{r}
+# Check for significant difference between men and women
+
+model_clpm_free <- '
+  # Inertia paths
+  Ipos ~ c(a1f, a1m, a1o)*Ipos_lag1
+  Ineg ~ c(a2f, a2m, a2o)*Ineg_lag1
+  Iaro ~ c(a3f, a3m, a3o)*Iaro_lag1
+
+  # Cross-lag
+  Ipos ~ c(b1f, b1m, b1o)*Ineg_lag1 + c(b2f, b2m, b2o)*Iaro_lag1
+  Ineg ~ c(c1f, c1m, c1o)*Ipos_lag1 + c(c2f, c2m, c2o)*Iaro_lag1
+  Iaro ~ c(d1f, d1m, d1o)*Ipos_lag1 + c(d2f, d2m, d2o)*Ineg_lag1
+'
+
+
+fit_free <- sem(model_clpm_free, data = clpm_data, group = "sex")
+
+# Whether there's significant difference between sex in at least one path
+anova(fit_clpm_sex, fit_free)
+```
+
+- This shows that at least one or more paths (inertia or cross-lag) differ between males and females
+
+```{r}
+# Check which paths are significantly different
+
+lavTestScore(fit_clpm_sex)
+```
+
+- .p3. vs. .p30. and .p3. vs. .p57.	are significant (p < 0.05)
+
+```{r}
+# Understand which paths are them
+
+pe <- parameterEstimates(fit_clpm_sex, standardized = TRUE)
+pe[c(3, 30, 57), c("lhs", "op", "rhs", "group", "est", "std.all")]
+```
+
+- females (0.413) and males (0.402) are significantly different in arousal inertia
+- females (0.413) and other (0.356) are also significantly different in arousal inertia
 
 
