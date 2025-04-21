@@ -30,6 +30,8 @@ str(dat)
 summary(dat[, c("Ineg", "Ipos", "Iaro")])
 ```
 
+- Mean score of Iaro is higher than the other two
+
 ```{r}
 # identify NAs
 colSums(is.na(dat))
@@ -85,11 +87,11 @@ summary(model_ineg)
 - Fixed Effects:
   - Intercept: Negative trial
   - `trial.valneu` (Neutral trial): Estimate = -4.08, t = -118.57, a very significant negative value. 
-    - Compared to the baseline (negative trial), the neutral trial significantly decreases negative emotions (Ineg)
+    - Compared to the baseline (negative trial), **the neutral trial significantly decreases negative emotions (Ineg)**
   - `trial.valpos` (Positive trial): Estimate = -4.09, t = -168.08, also significant. 
-    - the positive trial also significantly decreases negative emotions compared to the negative trial
+    - **the positive trial also significantly decreases negative emotions** compared to the negative trial
   - sexfemale: Estimate = 0.317543, t = 2.606. 
-    - Females have significantly higher negative emotional responses (Ineg) compared to males
+    - **Females have significantly higher negative emotional responses (Ineg)** compared to males
   - The effects of age and ethnicity are small and not significant
 
 
@@ -104,8 +106,8 @@ summary(model_ipos)
 - Intercept (negative trial): estimate = 0.72, t-value = 1.56. The effect of negative trial on positive emotions (Ipos) is small.
 - `trial.valneu`: estimate = 0.34, t-value = 9.48. Compared to valneg, the neutral trial significantly increases positive emotions (Ipos).
 - `trial.valpos`: estimate = 4.03, t-value = 160.64. Compared to valneg, the positive trial largely increases positive emotions (Ipos), and the effect is extremely significant.
-- `sexfemale`: estimate = 0.20, t = 1.58. Females tend to have slightly higher positive emotional responses than males.
-- `ethnAmerican Indian/Native American or Alaskan Native`: estimate = -0.94, t = -2.30. This ethnicity tends to have significantly lower positive emotional responses compared to the reference group.
+- `sexfemale`: estimate = 0.20, t = 1.58. **Females tend to have slightly higher positive emotional responses** than males.
+- `ethnAmerican Indian/Native American or Alaskan Native`: estimate = -0.94, t = -2.30. This ethnicity tends to have **significantly lower positive emotional responses** compared to the reference group.
 - `trial.valneu` and `trial.valpos` have a correlation of 0.354, showing that the effects of neutral and positive trials are somewhat related.
 
 ### How different trial types & demographics affect arousal emotional response (Iaro)?
@@ -117,8 +119,8 @@ summary(model_aro)
 ```
 
 - Intercept (negative trial): estimate = 2.93, t-value = 3.84. The effect of negative trial on arousal (Iaro) is moderate.
-- `trial.valneu`: estimate -2.26, t-value = -64.28. Compared to `valneg`, the neutral trial significantly decreases arousal (Iaro), which can be expected.
-- `trial.valpos`: estimate = -0.30, t-value = -12.10. Compared to `valneg`, the positive trial also significantly decreases arousal (Iaro), but the effect is small.
+- `trial.valneu`: estimate -2.26, t-value = -64.28. Compared to `valneg`, the **neutral trial significantly decreases arousal (Iaro)**, which can be expected.
+- `trial.valpos`: estimate = -0.30, t-value = -12.10. Compared to `valneg`, the **positive trial also significantly decreases arousal (Iaro)**, but the effect is small.
 - Other fixed effects are not significant.
 
 
@@ -298,7 +300,7 @@ inertia_long_normalized
 ```
 
 
-### Compare means of the 12 inertia types
+### Compare means and sd of the 12 inertia types
 
 ```{r}
 # Find mean value of each of the 12 inertia types
@@ -316,7 +318,6 @@ inertia_means
 ```
 
 - aro_inertia_neu: Extremely high SD (0.998) — suggests arousal inertia under neutral stimuli varies greatly across individuals
-- neg_inertia (mean = -0.024): Negative emotion inertia is slightly negative, meaning negative emotion is not likely to last
 - neg_inertia_pos: Negative near-zero mean (-9.32e-06) but very high variance (sd = 0.999); 
 
   - Negative emotion is likely to bounce back after positive stimuli, but the effect is extremely small
@@ -327,14 +328,13 @@ inertia_means
   - Positive emotion is likely to bounce back after negative stimuli, but the effect is also small
   - There's huge individual differences
 
-- pos_inertia (mean = -0.032): negative mean — indicates that positive emotions tend to drop off quickly
 - aro_inertia_neg (mean = 0.031): clear positive inertia — arousal tends to linger more after negative stimuli
-- neg_inertia_neg (mean = 0.024): negative emotions tend to persist more after negative trials
+- neg_inertia_neg (mean = 0.024): negative emotions tend to persist more after negative stimuli
 
 - **neg_inertia (mean = -0.024) vs. pos_inertia (mean = -0.032)**:
 
-  - **neg_inertia is bigger than pos_inertia, meaning that negative emotions tend to last longer**
-  - Positive emotions bounce back faster than negative emotions
+  - They both have negative mean — both neg and pos emotions drop off quickly
+  - **neg_inertia is bigger than pos_inertia: negative emotions tend to last slightly longer than positive emotions** (Positive emotions bounce back faster than negative emotions)
 
 - **neg_inertia_pos (mean = -9.32e-06) vs. pos_inertia_neg (-3.28e-05)**:
 
@@ -400,7 +400,7 @@ inertia_full %>%
 - **Black/African American: the only group with pos_inertia -> tend to stay in positive states longer (which is unexpected)**
 - **White/Caucasian: the only group with negative inertia across all three emotions -> tend to bounce back quickly overall (emotionally adaptive).**
   - This may reflect greater access to resources, social safety nets, and less exposure to systemic stressors for White people.
-- Both "Other" and "Decline to state" have much higher aro_inertia than others. 
+- Both "Other" and "Decline to state" have much higher aro_inertia than others.
   - This may suggest that the people who are less confident or more confused about their identities are likely to face heightened stress, social vigilance, or lack of belonging--all known to elevate arousal.
 
 
@@ -418,7 +418,7 @@ inertia_full %>%
   - Negative emotions drop significantly faster with increasing age -> **older participants are more resilient to negative emotions**
 - Arousal shows a slight increase with age (0.029)
 
-### Compare the effect of inertia types (pos, neg, neu) by demographics
+### Compare the effect of trial types (pos, neg, neu) by demographics
 
 ```{r}
 # By sex
@@ -551,8 +551,8 @@ summary(fit_clpm, standardized = TRUE, fit.measures = TRUE)
 - Ipos ~ Iaro_lag1 and Ineg ~ Iaro_lag1 are not significant
 
 - Conclusion: 
-  - Both positive and negative emotions predict more of the opposite in the next moment — possibly due to Emotion regulation attempts, Rebound effects, and Task structure
-  - Arousal is influenced negatively by both positive and negative emotions — maybe a sign of emotional resolution or recovery
+  - **Both positive and negative emotions predict more of the opposite in the next moment — possibly due to Emotion regulation attempts, Rebound effects, and Task structure**
+  - **Arousal is reduced by both positive and negative emotions** — maybe a sign of emotional resolution or recovery
 
 
 ### Difference in paths by sex
