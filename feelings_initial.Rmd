@@ -4,7 +4,7 @@ author: "Rongrong (Emma) Mo"
 output:
   pdf_document:
     toc: true
-    toc_depth: 3
+    toc_depth: 4
     number_sections: true
 fontsize: 11pt
 geometry: margin=1in
@@ -361,8 +361,14 @@ t.test(inertia_trans ~ inertia_type,
   - Interpretation: **Emotions tend to reset quickly when the stimulus is the opposite, potentially due to contrast effects or attentional shifts, meaning that people are likely to be affected by opposite stimuli**
   - **no statistically significant difference (p = 0.9998)**
 
+```{r}
+# Overall there's no statistically significant difference between the 12 inertia types
+anova_result <- aov(inertia_trans ~ inertia_type, data = inertia_long_normalized)
+summary(anova_result)
+```
 
-### Compare emotional inertia types (pos_inertia, neg_inertia, aro_inertia) by demographics
+
+### Compare 12 emotional inertia types by demographics
 
 ```{r}
 # Pivot transformed inertia data to wide format
@@ -386,6 +392,7 @@ inertia_full <- inertia_wide_trans %>%
 inertia_full
 ```
 
+#### By Sex
 
 ```{r}
 # Inertia types by Sex (mean)
@@ -393,8 +400,16 @@ inertia_full
 # By sex
 inertia_full %>%
   group_by(sex) %>%
-  summarise(across(starts_with("pos_inertia"):starts_with("aro_inertia"), ~mean(., na.rm = TRUE)))
+  summarise(across(starts_with("pos_") | starts_with("neg_") | starts_with("aro_"),
+                   ~mean(.x, na.rm = TRUE)))
 ```
+
+- **On average, males showed slightly higher positive emotion inertia (M = –0.021) than females (M = –0.043)**
+- pos_inertia_neg: male(0.1255) vs. female(-0.0984)
+  - **On average, Females lose positive emotions quickly in response to negative stimuli**
+- neg_inertia_pos: male (-0.0489) vs. female(0.0297)
+  - **On average, Females retain negative emotions more than males even under positive stimuli -> showing difficulty to let go of negativity**
+- This may partly explain why females are more likely to get depression
 
 ```{r}
 library(dplyr)
@@ -405,11 +420,10 @@ library(purrr)
 inertia_sex_long <- inertia_full %>%
   filter(!is.na(sex)) %>%
   pivot_longer(
-    cols = starts_with("pos_inertia"):starts_with("aro_inertia"),
+    cols = starts_with("pos_") | starts_with("neg_") | starts_with("aro_"),
     names_to = "inertia_type",
-    values_to = "inertia_trans"
-  ) %>%
-  filter(!is.na(inertia_trans))
+    values_to = "inertia_value"
+  ) 
 
 # Check for normality using Shapiro test
 normality_test <- inertia_sex_long %>%
@@ -417,43 +431,46 @@ normality_test <- inertia_sex_long %>%
   filter(n() >= 3) %>%  # Keep groups with sample size >= 3
   summarise(
     n = n(),
-    shapiro_p = shapiro.test(inertia_trans)$p.value,
-    skewness = e1071::skewness(inertia_trans, na.rm = TRUE),
+    shapiro_p = shapiro.test(inertia_value)$p.value,
+    skewness = e1071::skewness(inertia_value, na.rm = TRUE),
     .groups = "drop"
   ) %>%
   mutate(normal = ifelse(shapiro_p >= 0.05, "Yes", "No"))
 
 normality_test
 ```
+
 ```{r}
 # Check for significant difference by sex with ANOVA
-inertia_sex_long %>%
+library(broom)
+
+anova_results <- inertia_sex_long %>%
+  filter(!is.na(inertia_value), !is.na(sex)) %>%
   group_by(inertia_type) %>%
-  summarise(
-    aov_model = list(aov(inertia_trans ~ sex)),
-    .groups = "drop"
-  ) %>%
-  mutate(tidy_result = map(aov_model, tidy)) %>%
-  unnest(tidy_result) %>%
+  do({
+    model <- aov(inertia_value ~ sex, data = .)
+    tidy(model)
+  }) %>%
   filter(term == "sex") %>%
-  select(inertia_type, statistic, p.value)
+  select(inertia_type, p.value, statistic)
+anova_results
 ```
   
-- **On average, males showed higher positive emotion inertia (M = –0.021) than females (M = –0.043)**
-- **one-way ANOVA revealed that these differences were not statistically significant (p = .280)**
-- differences in negative inertia (p = .995) and arousal inertia (p = .190) across sex groups were also not significant
+- **one-way ANOVA revealed that these differences were not statistically significant**: among the 12 inertia types, none of them has statistically significant difference in sex
 
+#### By ethnicity
 
 ```{r}
 # By ethnicity (mean)
 inertia_full %>%
   group_by(ethn) %>%
-  summarise(across(starts_with("pos_inertia"):starts_with("aro_inertia"), ~mean(., na.rm = TRUE)))
+  summarise(across(starts_with("pos_") | starts_with("neg_") | starts_with("aro_"), ~mean(., na.rm = TRUE)))
 ```
 
-- **American Indian/Native American or Alaskan Native: the only group with positive neg_inertia -> tend to stay in negative states longer**
-- **Black/African American: the only group with pos_inertia -> tend to stay in positive states longer (which is unexpected)**
-- **White/Caucasian: the only group with negative inertia across all three emotions -> tend to bounce back quickly overall (emotionally adaptive).**
+On average (without checking for statistical significance):
+- **American Indian/Native American or Alaskan Native: the only group with neg_inertia > 0 (0.086) -> tend to stay in negative states longer**
+- **Black/African American: the only group with pos_inertia > 0 (0.007) -> tend to stay in positive states longer (which is unexpected)**
+- **White/Caucasian: the only group with inertia < 0 across all three emotions (general pos, neg, aro) -> tend to bounce back quickly overall (emotionally adaptive).**
   - This may reflect greater access to resources, social safety nets, and less exposure to systemic stressors for White people.
 - **Both "Other" and "Decline to state" have much higher aro_inertia than others.**
   - This may suggest that the people who are less confident or more confused about their identities are likely to face heightened stress, social vigilance, or lack of belonging--all known to elevate arousal.
@@ -472,26 +489,24 @@ inertia_ethn_long <- inertia_full %>%
   pivot_longer(
     cols = matches("inertia"),
   names_to = "inertia_type",
-  values_to = "inertia_trans"
-  ) %>%
-  filter(!is.na(inertia_trans))
+  values_to = "inertia_value"
+  )
 
 # Check for significant between-group difference using ANOVA
 
-ethn_anova <- inertia_ethn_long %>%
-  group_by(inertia_type) %>%
-  summarise(
-    aov_model = list(aov(inertia_trans ~ ethn)),
-    .groups = "drop"
-  ) %>%
-  mutate(tidy_result = map(aov_model, tidy)) %>%
-  unnest(tidy_result) %>%
-  filter(term == "ethn") %>%
-  select(inertia_type, statistic, p.value)
+library(broom)
 
-ethn_anova
+anova_ethn_results <- inertia_ethn_long %>%
+  filter(!is.na(inertia_value), !is.na(ethn)) %>%
+  group_by(inertia_type) %>%
+  do(tidy(aov(inertia_value ~ ethn, data = .))) %>%
+  filter(term == "ethn") %>%
+  select(inertia_type, p.value, statistic)
+
+anova_ethn_results
 ```
 
+2 types show statistically significant difference:
 - neg_inertia_neu: p = 0.0317
 - neg_inertia_pos: p = 0.0243
 
@@ -499,132 +514,63 @@ ethn_anova
 # post-hoc: check which groups have the difference using TukeyHSD
 
 # neg_inertia_neu
-neg_inertia_neu_model <- aov(inertia_trans ~ ethn,
-  data = filter(inertia_ethn_long, inertia_type == "neg_inertia_neu"))
+model_neu <- aov(inertia_value ~ ethn, data = filter(inertia_ethn_long, inertia_type == "neg_inertia_neu"))
+TukeyHSD(model_neu)
 
-TukeyHSD(neg_inertia_neu_model)
 ```
-- significant difference in neg_inertia_neu between Latino/Hispanic-Asian (M = ...) and Pacific Islander (M = ...)
+- significant difference in `neg_inertia_neu` (p-value = 0.0217) between Latino/Hispanic (M = 0.7943) and Asian/ Pacific Islander (M = -0.5886)
+  - Latino/Hispanic individuals showed greater negative inertia in response to neutral stimuli, potentially reflecting a stronger tendency to maintain negative emotional responses in ambiguous or emotionally neutral contexts
 
 ```{r}
 # neg_inertia_pos
-neg_inertia_pos_model <- aov(inertia_trans ~ ethn,
-  data = filter(inertia_ethn_long, inertia_type == "neg_inertia_pos"))
-
-TukeyHSD(neg_inertia_pos_model)
-
+model_pos <- aov(inertia_value ~ ethn, data = filter(inertia_ethn_long, inertia_type == "neg_inertia_pos"))
+TukeyHSD(model_pos)
 ```
 
 - No pairwise group differences are significant for neg_inertia_pos
+
+#### by age
 
 ```{r}
 # Inertia types by Age (continuous)
 
 inertia_full %>%
   summarise(across(
-    starts_with("pos_inertia"):starts_with("aro_inertia"),
+    starts_with("pos_") | starts_with("neg_") | starts_with("aro_"),
     ~ cor(., age, use = "complete.obs")
   ))
 ```
 
-- As age increases, neg_inertia (-0.128) decreases more than pos_inertia (-0.011). 
-  - Negative emotions drop fast with increasing age
+- On average, as age increases, neg_inertia (-0.128) decreases more than pos_inertia (-0.011). 
+  - Negative emotion may drop slightly faster with increasing age than positive emotion
 - Arousal shows a slight increase with age (0.029)
+- However, none of these associations reached statistical significance
 
 ```{r}
 # Check for significant difference of inertia by age
 
-# Run linear models for each inertia type
-model_pos_age <- lm(pos_inertia ~ age, data = inertia_full)
-model_neg_age <- lm(neg_inertia ~ age, data = inertia_full)
-model_aro_age <- lm(aro_inertia ~ age, data = inertia_full)
+inertia_long_age <- inertia_full %>%
+  pivot_longer(cols = starts_with("pos_") | starts_with("neg_") | starts_with("aro_"),
+               names_to = "inertia_type",
+               values_to = "inertia_value")
 
-# Summarize results
-summary(model_pos_age)  # Check p-value for age
+# run correlation tests
+
+age_corr_results <- inertia_long_age %>%
+  filter(!is.na(inertia_value), !is.na(age)) %>%
+  group_by(inertia_type) %>%
+  summarise(
+    cor_test = list(cor.test(inertia_value, age, method = "pearson")),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    r = map_dbl(cor_test, ~ .x$estimate),
+    p_value = map_dbl(cor_test, ~ .x$p.value)
+  )
+age_corr_results
 ```
 
-```{r}
-summary(model_neg_age)
-```
-
-```{r}
-summary(model_aro_age)  
-```
-
-- No statistically significant difference in age
-  - pos_inertia: p-value = 0.895
-  - neg_inertia: p-value = 0.111
-  - aro_inertia: p-value = 0.723
-
-### Compare the effect of trial types (pos, neg, neu) by demographics
-
-```{r}
-# By sex
-inertia_full %>%
-  group_by(sex) %>%
-  summarise(across(("pos_inertia_neg"):("aro_inertia_pos"), ~ mean(., na.rm = TRUE)))
-
-```
-
-- pos_inertia_neg: male(0.1255) vs. female(-0.0984)
-  - **Females tend to lose positive emotions quickly in response to negative stimuli**
-- neg_inertia_pos: male (-0.0489) vs. female(0.0297)
-  - **Females are more likely to retain negative emotions even with positive stimuli -> showing difficulty to let go of negativity**
-- This may partly explain why females are more likely to get depression
-- But **none of these differences reached statistical significance** based on one-way ANOVAs
-
-```{r}
-# Check for significant difference by sex
-inertia_vars <- c("pos_inertia_neg", "pos_inertia_neu", "pos_inertia_pos",
-                  "neg_inertia_neg", "neg_inertia_neu", "neg_inertia_pos",
-                  "aro_inertia_neg", "aro_inertia_neu", "aro_inertia_pos",
-                  "pos_inertia", "neg_inertia", "aro_inertia")
-
-# lapply ANOVA to each variable & get p-value
-anova_results <- lapply(inertia_vars, function(var) {
-  formula <- as.formula(paste(var, "~ sex"))
-  model <- aov(formula, data = inertia_full)
-  summary(model)[[1]][["Pr(>F)"]][1]
-})
-
-anova_df <- data.frame(
-  variable = inertia_vars,
-  p_value = unlist(anova_results)
-)
-
-anova_df$significance <- cut(anova_df$p_value,
-                             breaks = c(-Inf, 0.001, 0.01, 0.05, 1),
-                             labels = c("***", "**", "*", "ns"))  # ns = not significant
-
-print(anova_df)
-```
-
-
-```{r}
-# by age
-inertia_full %>%
-  summarise(across(("pos_inertia_neg"):("aro_inertia_pos"), ~ cor(., age, use = "complete.obs")))
-```
-
-```{r}
-# Check for statistical significance by age
-
-# use lapply to do cor.test for each variable
-cor_results <- lapply(inertia_vars, function(var) {
-  test <- cor.test(inertia_full[[var]], inertia_full$age, use = "complete.obs")
-  data.frame(variable = var, correlation = test$estimate, p_value = test$p.value)
-})
-
-cor_df <- do.call(rbind, cor_results)
-
-cor_df$significance <- cut(cor_df$p_value,
-                           breaks = c(-Inf, 0.001, 0.01, 0.05, 1),
-                           labels = c("***", "**", "*", "ns"))
-
-print(cor_df)
-```
-
-- only **pos_inertia_neu vary significantly by age** (r = -0.20, p = .026)
+- only `pos_inertia_neu` vary significantly by age: r = -0.1956, p = 0.0257
   - as age increases, positive emotion inertia under neutral conditions tends to decrease
   - **older individuals may be less likely to maintain positive emotions in response to neutral stimuli**
 
@@ -681,8 +627,9 @@ fit <- sem(model_inertia, data = clpm_data)
 summary(fit, standardized = TRUE, fit.measures = TRUE)
 ```
 
-- Positive inertia (0.200) and negative inertia (0.202) are about the same. Negative is slightly higher than positive.
-- Arousal inertia (0.329) is much higher than the other two, meaning that arousal emotion is likely to persist.
+- Positive inertia (0.194) and negative inertia (0.196) are about the same. Negative is slightly higher than positive.
+- Arousal inertia (0.333) is much higher than the other two, meaning that arousal emotion is more likely to persist (slightly higher arousal inertia)
+- All three types of emotional states (positive, negative, and arousal) exhibit significant inertia, with arousal showing the strongest carry-over effect from one trial to the next
 
 
 ### Cross-lag paths (how one emotion affect another at the next time point)
@@ -705,11 +652,11 @@ summary(fit_clpm, standardized = TRUE, fit.measures = TRUE)
 ```
 
 
-- Arousal inertia (0.414) is much higher than positive inertia (0.137) and negative inertia (0.143)
-- Ipos ~ Ineg_lag1 (0.165): negative emotion predicts positive emotion in the next moment, which might reflect emotional rebound
-- Ineg ~ Ipos_lag1 (0.173): positive emotion enhances negative emotion in the next moment, which might reflect emotional mix or trial order effect
-- Iaro ~ Ipos_lag1 (-0.043): positive emotion decreases arousal at the later stage
-- Iaro ~ Ineg_lag1 (-0.063): negative emotion decreases arousal at the later stage
+- Arousal inertia ($\beta$ = 0.414) is much higher than positive inertia ($\beta$ = 0.137) and negative inertia ($\beta$ = 0.143)
+- Ipos ~ Ineg_lag1 ($\beta$ = 0.166, p < .001): negative emotion predicts positive emotion in the next moment, which might reflect emotional rebound
+- Ineg ~ Ipos_lag1 ($\beta$ = 0.172, p < .001): positive emotion enhances negative emotion in the next moment, which might reflect emotional mix or trial order effect
+- Iaro ~ Ipos_lag1 ($\beta$ = -0.053): positive emotion decreases arousal at the later stage
+- Iaro ~ Ineg_lag1 ($\beta$ = -0.078): negative emotion decreases arousal at the later stage
 - Ipos ~ Iaro_lag1 and Ineg ~ Iaro_lag1 are not significant
 
 - Conclusion: 
@@ -719,7 +666,7 @@ summary(fit_clpm, standardized = TRUE, fit.measures = TRUE)
     - more likely to be a result of individual differences (some people are more responsive than others) under random trials within an experimental context, where individuals have “regression to the mean”. This might not be the case in real/natural context
 
 
-### Difference in paths by sex
+#### Difference in paths by sex
 
 ```{r}
 # Group by sex
@@ -776,4 +723,81 @@ pe[c(3, 30, 57), c("lhs", "op", "rhs", "group", "est", "std.all")]
 - females (0.413) and males (0.402) are significantly different in arousal inertia
 - females (0.413) and other (0.356) are also significantly different in arousal inertia
 
+#### Difference in paths by ethnicity
+
+```{r}
+model_clpm_nolabel <- '
+  Ipos ~ Ipos_lag1 + Ineg_lag1 + Iaro_lag1
+  Ineg ~ Ineg_lag1 + Ipos_lag1 + Iaro_lag1
+  Iaro ~ Iaro_lag1 + Ipos_lag1 + Ineg_lag1
+'
+
+fit_multigroup_free <- sem(model_clpm_nolabel, data = clpm_data, group = "ethn")
+summary(fit_multigroup_free, standardized = TRUE)
+```
+
+- Black/African American:
+  - Strongest Ipos inertia (0.187).
+  - Arousal -> Positive emotion path is negative and significant (-0.107), suggesting arousal suppresses positivity here
+
+- Latino/Hispanic:
+  - Uniquely positive effect from arousal to positive emotion (0.194).
+  - Had the strongest Iaro inertia (0.484).
+
+- White/Caucasian:
+  - Negative cross-effects from both Ipos to Iaro (-0.078) and Ineg to Iaro (-0.090), showing a strong regulatory suppression of arousal by both emotion valences.
+  - Effects tend to be more stable across emotional domains.
+
+- American Indian/Native American or Alaskan Native:
+  - Strong influence of Ineg -> Iaro (0.127), suggesting arousal is reactive to negativity here
+
+#### Difference in paths by age
+
+```{r}
+library(dplyr)
+library(broom)
+
+# cross-lagged paths to analyze
+paths <- list(
+  Ipos_on_Ineg = c("Ipos", "Ineg_lag1"),
+  Ipos_on_Aro = c("Ipos", "Iaro_lag1"),
+  Ineg_on_Ipos = c("Ineg", "Ipos_lag1"),
+  Ineg_on_Aro = c("Ineg", "Iaro_lag1"),
+  Iaro_on_Ipos = c("Iaro", "Ipos_lag1"),
+  Iaro_on_Ineg = c("Iaro", "Ineg_lag1")
+)
+
+results <- data.frame(path = character(), r = numeric(), p = numeric())
+
+# run regression for each path + correlation with age
+for (path_name in names(paths)) {
+  lhs <- paths[[path_name]][1]
+  rhs <- paths[[path_name]][2]
+  
+  # model each participant
+  path_df <- clpm_data %>%
+    group_by(subj) %>%
+    filter(!is.na(.data[[lhs]]), !is.na(.data[[rhs]])) %>%
+    do(tidy(lm(as.formula(paste(lhs, "~", rhs)), data = .))) %>%
+    filter(term == rhs) %>%
+    rename(estimate = estimate) %>%
+    left_join(select(dat, subj, age), by = "subj")
+  
+  # find correlation with age
+  cor_result <- cor.test(path_df$estimate, path_df$age)
+  
+  results <- rbind(results, data.frame(
+    path = path_name,
+    r = cor_result$estimate,
+    p = cor_result$p.value
+  ))
+}
+
+print(results)
+```
+
+- Ipos_on_Ineg: As age increases, negative emotion exerts a stronger influence on subsequent positive emotion (r = 0.124, p < .001)
+- Ipos_on_Aro: Higher arousal increasingly boosts next-step positive emotion with greater age (r = 0.202, p < .001)
+- Ineg_on_Aro: Higher arousal is linked with lower next-step negative emotion, especially as age increases
+- Iaro_on_Ineg: With age, the influence of negative emotion on subsequent arousal slightly decreases (r = -0.038, p < .001)
 
