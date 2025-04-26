@@ -10,6 +10,8 @@ fontsize: 11pt
 geometry: margin=1in
 ---
 
+## Descriptive statistics
+
 ```{r}
 feelings_initial <- load("feelings_initial.RData")
 ls()
@@ -23,8 +25,24 @@ summary(feelings_initial)
 str(dat)
 ```
 
+```{r}
+library(dplyr)
 
-## Descriptive statistics
+participant_info <- dat %>% distinct(subj, age, sex, ethn)
+participant_info
+```
+
+```{r}
+mean_age <- mean(participant_info$age, na.rm = TRUE)
+cat("Mean age:", mean_age, "\n")
+
+sd_age <- sd(participant_info$age, na.rm = TRUE)
+cat("SD of age:", sd_age, "\n")
+
+female_prop <- mean(participant_info$sex == "female", na.rm = TRUE)
+cat("Proportion of female participants:", female_prop)
+```
+
 
 ```{r}
 summary(dat[, c("Ineg", "Ipos", "Iaro")])
@@ -107,7 +125,7 @@ summary(model_ipos)
 - `trial.valneu`: estimate = 0.34, t-value = 9.48. Compared to valneg, the neutral trial significantly increases positive emotions (Ipos).
 - `trial.valpos`: estimate = 4.03, t-value = 160.64. Compared to valneg, the positive trial largely increases positive emotions (Ipos), and the effect is extremely significant.
 - `sexfemale`: estimate = 0.20, t = 1.58. **Females tend to have slightly higher positive emotional responses** than males.
-- `ethnAmerican Indian/Native American or Alaskan Native`: estimate = -0.94, t = -2.30. This ethnicity tends to have **significantly lower positive emotional responses** compared to the reference group.
+- `ethnAmerican Indian/Native American or Alaskan Native`: estimate = -0.94, t = -2.30. This ethnicity tends to have **significantly lower positive emotional responses** compared to the reference group (Asian or Pacific Islander).
 - `trial.valneu` and `trial.valpos` have a correlation of 0.354, showing that the effects of neutral and positive trials are somewhat related.
 
 ### How different trial types & demographics affect arousal emotional response (Iaro)?
@@ -332,7 +350,7 @@ inertia_means
 
 - **aro_inertia_neg (mean = 0.031) vs. aro_inertia_pos (mean = 0.007)**
   - participants show slightly greater arousal persistence following negative stimuli (M = 0.0308) compared to positive stimuli
-  - but the difference is non-significant
+  - but the difference is non-significant (p-value = 0.1727)
 
 ```{r}
 # check significance for aro_inertia_neg vs. aro_inertia_pos
@@ -600,7 +618,7 @@ ggcorrplot(cor_matrix,
 
 ## CLPM
 
-### Estimate inertia score of positive, negative, and arousal emotions
+### Cross-lag paths (how one emotion affect another at the next time point) & Inertia
 
 ```{r}
 library(lavaan)
@@ -616,25 +634,6 @@ clpm_data <- dat %>%
   ) %>%
   filter(!is.na(Ipos_lag1))
 
-model_inertia <- '
-  # Autoregressive (inertia) paths
-  Ipos ~ a1 * Ipos_lag1
-  Ineg ~ a2 * Ineg_lag1
-  Iaro ~ a3 * Iaro_lag1
-'
-
-fit <- sem(model_inertia, data = clpm_data)
-summary(fit, standardized = TRUE, fit.measures = TRUE)
-```
-
-- Positive inertia (0.194) and negative inertia (0.196) are about the same. Negative is slightly higher than positive.
-- Arousal inertia (0.333) is much higher than the other two, meaning that arousal emotion is more likely to persist (slightly higher arousal inertia)
-- All three types of emotional states (positive, negative, and arousal) exhibit significant inertia, with arousal showing the strongest carry-over effect from one trial to the next
-
-
-### Cross-lag paths (how one emotion affect another at the next time point)
-
-```{r}
 model_clpm <- '
   # Autoregressive (inertia) paths
   Ipos ~ a1 * Ipos_lag1
@@ -651,8 +650,10 @@ fit_clpm <- sem(model_clpm, data = clpm_data)
 summary(fit_clpm, standardized = TRUE, fit.measures = TRUE)
 ```
 
+- Positive inertia (0.137) and negative inertia (0.143) are about the same. Negative is slightly higher than positive.
+- Arousal inertia (0.414) is much higher than the other two, meaning that arousal emotion is more likely to persist (slightly higher arousal inertia)
+- All three types of emotional states (positive, negative, and arousal) exhibit significant inertia, with arousal showing the strongest carry-over effect from one trial to the next
 
-- Arousal inertia ($\beta$ = 0.414) is much higher than positive inertia ($\beta$ = 0.137) and negative inertia ($\beta$ = 0.143)
 - Ipos ~ Ineg_lag1 ($\beta$ = 0.166, p < .001): negative emotion predicts positive emotion in the next moment, which might reflect emotional rebound
 - Ineg ~ Ipos_lag1 ($\beta$ = 0.172, p < .001): positive emotion enhances negative emotion in the next moment, which might reflect emotional mix or trial order effect
 - Iaro ~ Ipos_lag1 ($\beta$ = -0.053): positive emotion decreases arousal at the later stage
@@ -738,11 +739,11 @@ summary(fit_multigroup_free, standardized = TRUE)
 
 - Black/African American:
   - Strongest Ipos inertia (0.187).
-  - Arousal -> Positive emotion path is negative and significant (-0.107), suggesting arousal suppresses positivity here
+  - Arousal -> Positive emotion path is negative and significant (-0.085), suggesting arousal suppresses positivity here
 
 - Latino/Hispanic:
-  - Uniquely positive effect from arousal to positive emotion (0.194).
-  - Had the strongest Iaro inertia (0.484).
+  - Uniquely positive effect from arousal to positive emotion (0.189).
+  - Had the strongest Iaro inertia (0.483).
 
 - White/Caucasian:
   - Negative cross-effects from both Ipos to Iaro (-0.078) and Ineg to Iaro (-0.090), showing a strong regulatory suppression of arousal by both emotion valences.
