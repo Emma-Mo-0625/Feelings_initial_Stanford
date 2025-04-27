@@ -348,36 +348,153 @@ inertia_means
   - Positive emotion is likely to bounce back after negative stimuli
   - Huge individual differences
 
-- **aro_inertia_neg (mean = 0.031) vs. aro_inertia_pos (mean = 0.007)**
+#### aro_inertia_neg (mean = 0.031) vs. aro_inertia_pos (mean = 0.007)
   - participants show slightly greater arousal persistence following negative stimuli (M = 0.0308) compared to positive stimuli
   - but the difference is non-significant (p-value = 0.1727)
 
 ```{r}
-# check significance for aro_inertia_neg vs. aro_inertia_pos
-t.test(inertia_trans ~ inertia_type,
-       data = filter(inertia_long_normalized, inertia_type %in% c("aro_inertia_neg", "aro_inertia_pos")))
+library(dplyr)
+library(broom)
+library(effectsize)
+
+inertia_compare_aro <- inertia_long_normalized %>%
+  filter(inertia_type %in% c("aro_inertia_neg", "aro_inertia_pos")) %>%
+  filter(!is.na(inertia_trans))
+
+t_result_aro <- t.test(inertia_trans ~ inertia_type, data = inertia_compare_aro)
+print(t_result_aro)
+
+cohen_d_result_aro <- cohens_d(inertia_trans ~ inertia_type, data = inertia_compare_aro)
+print(cohen_d_result_aro)
+
+anova_result_aro <- aov(inertia_trans ~ inertia_type, data = inertia_compare_aro)
+summary(anova_result_aro)
+
+eta_squared_result_aro <- eta_squared(anova_result_aro, partial = TRUE)
+print(eta_squared_result_aro)
 ```
 
 
-- **neg_inertia (mean = -0.024) vs. pos_inertia (mean = -0.032)**:
+#### neg_inertia (mean = -0.024) vs. pos_inertia (mean = -0.032):
 
 ```{r}
-t.test(inertia_trans ~ inertia_type,
-       data = filter(inertia_long_normalized, inertia_type %in% c("neg_inertia", "pos_inertia")))
+inertia_compare_negpos <- inertia_long_normalized %>%
+  filter(inertia_type %in% c("neg_inertia", "pos_inertia")) %>%
+  filter(!is.na(inertia_trans))
+
+t_result_negpos <- t.test(inertia_trans ~ inertia_type, data = inertia_compare_negpos)
+print(t_result_negpos)
+
+cohen_d_result_negpos <- cohens_d(inertia_trans ~ inertia_type, data = inertia_compare_negpos)
+print(cohen_d_result_negpos)
+
+anova_result_negpos <- aov(inertia_trans ~ inertia_type, data = inertia_compare_negpos)
+summary(anova_result_negpos)
+
+eta_squared_result_negpos <- eta_squared(anova_result_negpos, partial = TRUE)
+print(eta_squared_result_negpos)
 ```
 
   - **Negative emotions appeared to decay slightly more slowly (M = –0.024) than positive ones (M = –0.032), but the difference is not significant (p-value = 0.461)**
   - on average, both emotional valences exhibited similarly rapid decay, and individual variability may overshadow any consistent group-level differences
+- Cohen's d effect size = 0.08: difference between `neg_inertia` and `pos_inertia` is small
 
-- **neg_inertia_pos (mean = -9.32e-06) vs. pos_inertia_neg (-3.28e-05)**:
+
+#### neg_inertia_pos (mean = -9.32e-06) vs. pos_inertia_neg (-3.28e-05):
 
 ```{r}
-t.test(inertia_trans ~ inertia_type,
-       data = filter(inertia_long_normalized, inertia_type %in% c("neg_inertia_pos", "pos_inertia_neg")))
+inertia_compare_negpos2 <- inertia_long_normalized %>%
+  filter(inertia_type %in% c("neg_inertia_pos", "pos_inertia_neg")) %>%
+  filter(!is.na(inertia_trans))
+
+t_result_negpos2 <- t.test(inertia_trans ~ inertia_type, data = inertia_compare_negpos2)
+print(t_result_negpos2)
+
+cohen_d_result_negpos2 <- cohens_d(inertia_trans ~ inertia_type, data = inertia_compare_negpos2)
+print(cohen_d_result_negpos2)
+
+anova_result_negpos2 <- aov(inertia_trans ~ inertia_type, data = inertia_compare_negpos2)
+summary(anova_result_negpos2)
+
+eta_squared_result_negpos2 <- eta_squared(anova_result_negpos2, partial = TRUE)
+print(eta_squared_result_negpos2)
 ```
 
   - Interpretation: **Emotions tend to reset quickly when the stimulus is the opposite, potentially due to contrast effects or attentional shifts, meaning that people are likely to be affected by opposite stimuli**
   - **no statistically significant difference (p = 0.9998)**
+- Cohen's d effect size = 2.35e-05: difference between `neg_inertia_pos` and `pos_inertia_neg` is negligible
+
+
+#### pos_inertia_pos vs. pos_inertia_neg:
+
+```{r}
+# pos_inertia_pos vs. pos_inertia_neg: effect size
+
+pos_pos_vs_pos_neg <- inertia_long_normalized %>%
+  filter(inertia_type %in% c("pos_inertia_pos", "pos_inertia_neg")) %>%
+  filter(!is.na(inertia_trans))
+
+t_result <- t.test(inertia_trans ~ inertia_type, data = pos_pos_vs_pos_neg)
+print(t_result)
+
+cohen_d_result <- cohens_d(inertia_trans ~ inertia_type, data = pos_pos_vs_pos_neg)
+print(cohen_d_result)
+
+anova_result <- aov(inertia_trans ~ inertia_type, data = pos_pos_vs_pos_neg)
+summary(anova_result)
+
+eta_squared_result <- eta_squared(anova_result, partial = TRUE)
+print(eta_squared_result)
+```
+
+#### neg_inertia_neg vs. neg_inertia_pos:
+
+```{r}
+# neg_inertia_neg vs. neg_inertia_pos: effect size
+
+inertia_compare_neg_inertia <- inertia_long_normalized %>%
+  filter(inertia_type %in% c("neg_inertia_neg", "neg_inertia_pos")) %>%
+  filter(!is.na(inertia_trans))
+
+t_result_neg <- t.test(inertia_trans ~ inertia_type, data = inertia_compare_neg_inertia)
+print(t_result_neg)
+
+cohen_d_result_neg <- cohens_d(inertia_trans ~ inertia_type, data = inertia_compare_neg_inertia)
+print(cohen_d_result_neg)
+
+anova_result_neg <- aov(inertia_trans ~ inertia_type, data = inertia_compare_neg_inertia)
+summary(anova_result_neg)
+
+eta_squared_result_neg <- eta_squared(anova_result_neg, partial = TRUE)
+print(eta_squared_result_neg)
+```
+
+
+#### pos_inertia_neu vs. neg_inertia_neu:
+
+```{r}
+# pos_inertia_neu vs. neg_inertia_neu: effect size
+
+inertia_compare_neu <- inertia_long_normalized %>%
+  filter(inertia_type %in% c("pos_inertia_neu", "neg_inertia_neu")) %>%
+  filter(!is.na(inertia_trans))
+
+t_result_neu <- t.test(inertia_trans ~ inertia_type, data = inertia_compare_neu)
+print(t_result_neu)
+
+cohen_d_result_neu <- cohens_d(inertia_trans ~ inertia_type, data = inertia_compare_neu)
+print(cohen_d_result_neu)
+
+anova_result_neu <- aov(inertia_trans ~ inertia_type, data = inertia_compare_neu)
+summary(anova_result_neu)
+
+eta_squared_result_neu <- eta_squared(anova_result_neu, partial = TRUE)
+print(eta_squared_result_neu)
+
+```
+
+
+#### Multivariate ANOVA of 12 inertia types:
 
 ```{r}
 # Overall there's no statistically significant difference between the 12 inertia types
@@ -385,6 +502,13 @@ anova_result <- aov(inertia_trans ~ inertia_type, data = inertia_long_normalized
 summary(anova_result)
 ```
 
+```{r}
+# Find partial eta squared for effect size
+partial_eta_squared_result <- eta_squared(anova_result, partial = TRUE)
+partial_eta_squared_result
+```
+
+- Partial eta squared = 0.0008, which is a very small effect size
 
 ### Compare 12 emotional inertia types by demographics
 
@@ -476,6 +600,64 @@ anova_results
   
 - **one-way ANOVA revealed that these differences were not statistically significant**: among the 12 inertia types, none of them has statistically significant difference in sex
 
+```{r}
+# Find eta squared of inertia types by sex
+library(effectsize)
+library(broom)
+library(dplyr)
+
+eta_squared_results <- inertia_sex_long %>%
+  filter(!is.na(inertia_value), !is.na(sex)) %>%
+  group_by(inertia_type) %>%
+  do({
+    model <- aov(inertia_value ~ sex, data = .)
+    
+    # broom::tidy for F and p-value
+    tidy_model <- tidy(model) %>%
+      filter(term == "sex")
+    
+    if(nrow(tidy_model) > 0){
+      # eta squared
+      eta_sq <- eta_squared(model, partial = TRUE) %>%
+        filter(Parameter == "sex")
+      
+      data.frame(
+        inertia_type = unique(.$inertia_type),
+        F_value = tidy_model$statistic,
+        p_value = tidy_model$p.value,
+        partial_eta_squared = eta_sq$Eta2
+      )
+    } else {
+      data.frame(
+        inertia_type = unique(.$inertia_type),
+        F_value = NA,
+        p_value = NA,
+        partial_eta_squared = NA
+      )
+    }
+  })
+
+print(eta_squared_results)
+```
+
+```{r}
+# Cohen's d between male and female
+library(effectsize)
+library(dplyr)
+
+cohens_d_results <- inertia_sex_long %>%
+  filter(!is.na(inertia_value), sex %in% c("male", "female")) %>%
+  group_by(inertia_type) %>%
+  nest() %>%
+  mutate(
+    cohens_d = map_dbl(data, ~ cohens_d(inertia_value ~ sex, data = .x)$Cohens_d[1])
+  ) %>%
+  select(inertia_type, cohens_d)
+
+print(cohens_d_results)
+```
+
+
 #### By ethnicity
 
 ```{r}
@@ -546,6 +728,42 @@ TukeyHSD(model_pos)
 ```
 
 - No pairwise group differences are significant for neg_inertia_pos
+
+```{r}
+# partial eta squared for each inertia type
+eta_squared_ethn_results <- inertia_ethn_long %>%
+  filter(!is.na(inertia_value), !is.na(ethn)) %>%
+  group_by(inertia_type) %>%
+  do({
+    model <- aov(inertia_value ~ ethn, data = .)
+    
+    tidy_model <- tidy(model) %>%
+      filter(term == "ethn")
+    
+    if (nrow(tidy_model) > 0) {
+      eta_sq <- eta_squared(model, partial = TRUE) %>%
+        filter(Parameter == "ethn")
+      
+      data.frame(
+        inertia_type = unique(.$inertia_type),
+        F_value = tidy_model$statistic,
+        p_value = tidy_model$p.value,
+        partial_eta_squared = eta_sq$Eta2
+      )
+    } else {
+      data.frame(
+        inertia_type = unique(.$inertia_type),
+        F_value = NA,
+        p_value = NA,
+        partial_eta_squared = NA
+      )
+    }
+  })
+
+print(eta_squared_ethn_results)
+
+```
+
 
 #### by age
 
@@ -737,12 +955,16 @@ fit_multigroup_free <- sem(model_clpm_nolabel, data = clpm_data, group = "ethn")
 summary(fit_multigroup_free, standardized = TRUE)
 ```
 
+- Asian or Pacific Islander:
+  - strong arousal inertia ($\beta$ = .43, p < .001).
+  - Both prior positive ($\beta$ = –.05, p = .031) and negative emotion ($\beta$ = –.08, p < .001) significantly reduced subsequent arousal
+
 - Black/African American:
-  - Strongest Ipos inertia (0.187).
+  - Strongest Ipos inertia (0.187) among all groups
   - Arousal -> Positive emotion path is negative and significant (-0.085), suggesting arousal suppresses positivity here
 
 - Latino/Hispanic:
-  - Uniquely positive effect from arousal to positive emotion (0.189).
+  - Uniquely positive effect from prior arousal to later positive emotion (0.189).
   - Had the strongest Iaro inertia (0.483).
 
 - White/Caucasian:
@@ -750,7 +972,8 @@ summary(fit_multigroup_free, standardized = TRUE)
   - Effects tend to be more stable across emotional domains.
 
 - American Indian/Native American or Alaskan Native:
-  - Strong influence of Ineg -> Iaro (0.127), suggesting arousal is reactive to negativity here
+  - The highest negative emotion inertia ($\beta$ = .21, p = .005)
+  - The only group where prior negative emotion significantly increased arousal ($\beta$ = .16, p = .037)"
 
 #### Difference in paths by age
 
