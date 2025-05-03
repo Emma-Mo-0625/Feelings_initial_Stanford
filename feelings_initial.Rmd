@@ -510,6 +510,25 @@ partial_eta_squared_result
 
 - Partial eta squared = 0.0008, which is a very small effect size
 
+#### re-test by Bonferroni
+
+```{r}
+# original p-values by pairwise t-test
+
+raw_pvals <- c(
+  0.1727,  # aro_inertia_neg vs aro_inertia_pos
+  0.4607,  # neg_inertia vs pos_inertia
+  0.9998,  # neg_inertia_pos vs pos_inertia_neg
+  0.9452,  # pos_inertia_pos vs pos_inertia_neg
+  0.7758,  # neg_inertia_neg vs neg_inertia_pos
+  0.9997   # pos_inertia_neu vs neg_inertia_neu
+)
+
+# Bonferroni adjusted p-values
+p.adjust(raw_pvals, method = "bonferroni")
+```
+
+
 ### Compare 12 emotional inertia types by demographics
 
 ```{r}
@@ -657,6 +676,17 @@ cohens_d_results <- inertia_sex_long %>%
 print(cohens_d_results)
 ```
 
+```{r}
+# retest sex difference by Bonferroni
+
+Bonferroni_results <- eta_squared_results %>%
+  ungroup() %>%
+  mutate(bonferroni_p = p.adjust(p_value, method = "bonferroni"))
+Bonferroni_results
+```
+
+- All stay non-significant after Bonferroni correction
+  - no significant difference between sex for each of the inertia types
 
 #### By ethnicity
 
@@ -764,6 +794,19 @@ print(eta_squared_ethn_results)
 
 ```
 
+```{r}
+# retest ethnicity difference by Bonferroni
+Bonferroni_results_ethn <- eta_squared_ethn_results %>%
+  ungroup() %>%
+  mutate(
+    bonferroni_p = p.adjust(p_value, method = "bonferroni"),
+    significant = bonferroni_p < 0.05
+  )
+Bonferroni_results_ethn
+```
+
+- All become non-significant after Bonferroni correction, even `neg_inertia_neu` and `neg_inertia_pos`, the only two significant inertia types from the original p-value test
+
 
 #### by age
 
@@ -809,6 +852,20 @@ age_corr_results
 - only `pos_inertia_neu` vary significantly by age: r = -0.1956, p = 0.0257
   - as age increases, positive emotion inertia under neutral conditions tends to decrease
   - **older individuals may be less likely to maintain positive emotions in response to neutral stimuli**
+  
+  
+```{r}
+# retest age difference by Bonferroni
+age_corr_results <- age_corr_results %>%
+  mutate(
+    bonferroni_p = p.adjust(p_value, method = "bonferroni"),
+    significant = bonferroni_p < 0.05
+  )
+age_corr_results
+```
+
+- All become non-significant after Bonferroni correction, even `pos_inertia_neu`, the only significant inertia type from the original correlation test
+
 
 ### Correlation between inertia types
 
