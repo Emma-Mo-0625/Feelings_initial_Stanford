@@ -1,0 +1,416 @@
+---
+title: "RI-CLPM"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 4
+    number_sections: true
+  html_notebook: default
+---
+
+# Cross-lag paths (how one emotion affect another at the next time point) & Inertia
+
+```{r}
+load("feelings_initial.RData")
+library(lavaan)
+library(dplyr)
+library(tidyr)
+
+clpm_data <- dat %>%
+  arrange(subj, trial.num) %>%
+  group_by(subj) %>%
+  mutate(
+    Ipos_lag1 = lag(Ipos),
+    Ineg_lag1 = lag(Ineg),
+    Iaro_lag1 = lag(Iaro)
+  ) %>%
+  filter(!is.na(Ipos_lag1))
+
+model_clpm <- '
+  # Autoregressive (inertia) paths
+  Ipos ~ a1 * Ipos_lag1
+  Ineg ~ a2 * Ineg_lag1
+  Iaro ~ a3 * Iaro_lag1
+  
+  # Cross-lagged paths
+  Ipos ~ b1 * Ineg_lag1 + b2 * Iaro_lag1
+  Ineg ~ c1 * Ipos_lag1 + c2 * Iaro_lag1
+  Iaro ~ d1 * Ipos_lag1 + d2 * Ineg_lag1
+'
+
+fit_clpm <- sem(model_clpm, data = clpm_data)
+summary(fit_clpm, standardized = TRUE, fit.measures = TRUE)
+```
+
+## Difference in paths by sex
+
+```{r}
+# Group by sex
+
+fit_clpm_sex <- sem(model_clpm, 
+                    data = clpm_data, 
+                    group = "sex")
+summary(fit_clpm_sex, standardized = TRUE, fit.measures = TRUE)
+
+```
+
+```{r}
+# Check for significant difference between men and women
+
+model_clpm_free <- '
+  # Inertia paths
+  Ipos ~ c(a1f, a1m, a1o)*Ipos_lag1
+  Ineg ~ c(a2f, a2m, a2o)*Ineg_lag1
+  Iaro ~ c(a3f, a3m, a3o)*Iaro_lag1
+
+  # Cross-lag
+  Ipos ~ c(b1f, b1m, b1o)*Ineg_lag1 + c(b2f, b2m, b2o)*Iaro_lag1
+  Ineg ~ c(c1f, c1m, c1o)*Ipos_lag1 + c(c2f, c2m, c2o)*Iaro_lag1
+  Iaro ~ c(d1f, d1m, d1o)*Ipos_lag1 + c(d2f, d2m, d2o)*Ineg_lag1
+'
+
+
+fit_free <- sem(model_clpm_free, data = clpm_data, group = "sex")
+
+# Whether there's significant difference between sex in at least one path
+anova(fit_clpm_sex, fit_free)
+```
+
+```{r}
+# Check which paths are significantly different
+
+lavTestScore(fit_clpm_sex)
+```
+
+```{r}
+# Understand which paths are them
+
+pe <- parameterEstimates(fit_clpm_sex, standardized = TRUE)
+pe[c(3, 30, 57), c("lhs", "op", "rhs", "group", "est", "std.all")]
+```
+
+- females (0.413) and males (0.402) are significantly different in arousal inertia
+- females (0.413) and other (0.356) are also significantly different in arousal inertia
+
+
+## Difference in paths by ethnicity
+
+```{r}
+model_clpm_nolabel <- '
+  Ipos ~ Ipos_lag1 + Ineg_lag1 + Iaro_lag1
+  Ineg ~ Ineg_lag1 + Ipos_lag1 + Iaro_lag1
+  Iaro ~ Iaro_lag1 + Ipos_lag1 + Ineg_lag1
+'
+
+fit_multigroup_free <- sem(model_clpm_nolabel, data = clpm_data, group = "ethn")
+summary(fit_multigroup_free, standardized = TRUE)
+```
+
+- Asian or Pacific Islander:
+  - strong arousal inertia ($\beta$ = .43, p < .001).
+  - Both prior positive ($\beta$ = –.05, p = .031) and negative emotion ($\beta$ = –.08, p < .001) significantly reduced subsequent arousal
+
+- Black/African American:
+  - Strongest Ipos inertia (0.187) among all groups
+  - Arousal -> Positive emotion path is negative and significant (-0.085), suggesting arousal suppresses positivity here
+
+- Latino/Hispanic:
+  - Uniquely positive effect from prior arousal to later positive emotion (0.189).
+  - Had the strongest Iaro inertia (0.483).
+
+- White/Caucasian:
+  - Negative cross-effects from both Ipos to Iaro (-0.078) and Ineg to Iaro (-0.090), showing a strong regulatory suppression of arousal by both emotion valences.
+  - Effects tend to be more stable across emotional domains.
+
+- American Indian/Native American or Alaskan Native:
+  - The highest negative emotion inertia ($\beta$ = .21, p = .005)
+  - The only group where prior negative emotion significantly increased arousal ($\beta$ = .16, p = .037)"
+  
+
+## Difference in paths by age
+
+```{r}
+library(dplyr)
+library(broom)
+
+# cross-lagged paths to analyze
+paths <- list(
+  Ipos_on_Ineg = c("Ipos", "Ineg_lag1"),
+  Ipos_on_Aro = c("Ipos", "Iaro_lag1"),
+  Ineg_on_Ipos = c("Ineg", "Ipos_lag1"),
+  Ineg_on_Aro = c("Ineg", "Iaro_lag1"),
+  Iaro_on_Ipos = c("Iaro", "Ipos_lag1"),
+  Iaro_on_Ineg = c("Iaro", "Ineg_lag1")
+)
+
+results <- data.frame(path = character(), r = numeric(), p = numeric())
+
+# run regression for each path + correlation with age
+for (path_name in names(paths)) {
+  lhs <- paths[[path_name]][1]
+  rhs <- paths[[path_name]][2]
+  
+  # model each participant
+  path_df <- clpm_data %>%
+    group_by(subj) %>%
+    filter(!is.na(.data[[lhs]]), !is.na(.data[[rhs]])) %>%
+    do(tidy(lm(as.formula(paste(lhs, "~", rhs)), data = .))) %>%
+    filter(term == rhs) %>%
+    rename(estimate = estimate) %>%
+    left_join(select(dat, subj, age), by = "subj")
+  
+  # find correlation with age
+  cor_result <- cor.test(path_df$estimate, path_df$age)
+  
+  results <- rbind(results, data.frame(
+    path = path_name,
+    r = cor_result$estimate,
+    p = cor_result$p.value
+  ))
+}
+
+print(results)
+```
+
+- Ipos_on_Ineg: As age increases, negative emotion exerts a stronger influence on subsequent positive emotion (r = 0.124, p < .001)
+- Ipos_on_Aro: Higher arousal increasingly boosts next-step positive emotion with greater age (r = 0.202, p < .001)
+- Ineg_on_Aro: Higher arousal is linked with lower next-step negative emotion, especially as age increases
+- Iaro_on_Ineg: With age, the influence of negative emotion on subsequent arousal slightly decreases (r = -0.038, p < .001)
+
+# RI-CLPM (Random-Intercept)--Causality
+
+```{r}
+# -----------------------------------------------------------------------------------
+# EXAMPLE 1: RI-CLPM FOR THREE TIME POINTS (t=1,2,3)
+# We use the original `dat` (not filtered `clpm_data`) to ensure time 1 is included.
+# -----------------------------------------------------------------------------------
+
+# 1) Reshape the data to wide format for trials 1–3
+wide3 <- dat %>% 
+  # Keep only trials 1, 2, and 3
+  filter(trial.num %in% 1:3) %>%
+  # Select subject ID plus the three emotion measures with their trial index
+  select(subj, trial.num, Ipos, Ineg, Iaro) %>%
+  # Pivot wide: one row per subject, columns Ipos_t1, Ipos_t2, Ipos_t3, etc.
+  pivot_wider(
+    id_cols      = subj,
+    names_from   = trial.num,
+    names_prefix = "t",
+    values_from  = c(Ipos, Ineg, Iaro)
+  )
+
+# Check that wide3 contains the expected columns:
+colnames(wide3)
+# Expected: subj, Ipos_t1, Ipos_t2, Ipos_t3, Ineg_t1, ..., Iaro_t3
+
+```
+
+```{r}
+# 2) Define the RI-CLPM model syntax
+library(lavaan)
+model_riclpm_3 <- '
+
+  # 2.1 Random intercept (trait) latent factors:
+  #     Each RI factor loads with coefficient = 1 on its observed indicators
+  #     to capture stable between-person differences across t1–t3.
+  RIpos =~ 1*Ipos_t1 + 1*Ipos_t2 + 1*Ipos_t3
+  RIneg =~ 1*Ineg_t1 + 1*Ineg_t2 + 1*Ineg_t3
+  RIaro =~ 1*Iaro_t1 + 1*Iaro_t2 + 1*Iaro_t3
+
+  # 2.2 De-mean observed variables (fix intercepts to zero):
+  #     Ensures residuals reflect within-person deviations from each person’s mean.
+  Ipos_t1 ~ 0*1
+  Ipos_t2 ~ 0*1
+  Ipos_t3 ~ 0*1
+  Ineg_t1 ~ 0*1
+  Ineg_t2 ~ 0*1
+  Ineg_t3 ~ 0*1
+  Iaro_t1 ~ 0*1
+  Iaro_t2 ~ 0*1
+  Iaro_t3 ~ 0*1
+
+  # 2.3 Constrain residuals and RIs to be uncorrelated:
+  #     Isolates within-person (state) variance from between-person (trait) variance.
+  
+  Ipos_t1 ~~ 0*RIpos
+  Ipos_t2 ~~ 0*RIpos
+  Ipos_t3 ~~ 0*RIpos
+  Ineg_t1 ~~ 0*RIneg
+  Ineg_t2 ~~ 0*RIneg
+  Ineg_t3 ~~ 0*RIneg
+  Iaro_t1 ~~ 0*RIaro
+  Iaro_t2 ~~ 0*RIaro
+  Iaro_t3 ~~ 0*RIaro
+
+  # 2.4 Within-person lagged effects (on the residual/state level):
+  #     Autoregressive (“inertia”) and cross-lagged paths for t2 and t3.
+  #   At time 2:
+  Ipos_t2 ~ a1*Ipos_t1 + b1*Ineg_t1 + b2*Iaro_t1
+  Ineg_t2 ~ a2*Ineg_t1 + c1*Ipos_t1 + c2*Iaro_t1
+  Iaro_t2 ~ a3*Iaro_t1 + d1*Ipos_t1 + d2*Ineg_t1
+
+  #   At time 3:
+  Ipos_t3 ~ a1*Ipos_t2 + b1*Ineg_t2 + b2*Iaro_t2
+  Ineg_t3 ~ a2*Ineg_t2 + c1*Ipos_t2 + c2*Iaro_t2
+  Iaro_t3 ~ a3*Iaro_t2 + d1*Ipos_t2 + d2*Ineg_t2
+'
+
+# 3) Fit the RI-CLPM with MLR estimator (robust ML)
+fit_riclpm_3 <- sem(
+  model     = model_riclpm_3,
+  data      = wide3,
+  estimator = "MLR"
+)
+
+# 4) Summarize results with standardized estimates and fit indices
+summary(fit_riclpm_3, standardized = TRUE, fit.measures = TRUE)
+```
+
+```{r}
+# -----------------------------------------------------------------------------------
+# EXAMPLE 2: BLOCK-BASED RI-CLPM (AVERAGE EVERY 10 TRIALS → 11 BLOCKS)
+# Aggregates high-frequency data to improve model identification.
+# -----------------------------------------------------------------------------------
+
+# 1) Create block variable (1–11) and compute block-wise averages per subject
+
+block_size <- 10
+clpm_block <- dat %>%
+  # Assign each trial to a block index (e.g., trial 1–10 → block 1, etc.)
+  mutate(block = ceiling(trial.num / block_size)) %>%
+  # Group by subject and block
+  group_by(subj, block) %>%
+  # Compute mean Ipos, Ineg, Iaro within each block
+  summarise(
+    Ipos = mean(Ipos),
+    Ineg = mean(Ineg),
+    Iaro = mean(Iaro),
+    .groups = "drop"
+  )
+
+# 2) Pivot the block-level data to wide format: Ipos_b1, Ipos_b2, …, Iaro_b11
+wide_blk <- clpm_block %>%
+  pivot_wider(
+    id_cols      = subj,
+    names_from   = block,
+    names_prefix = "b",
+    values_from  = c(Ipos, Ineg, Iaro)
+  )
+
+# 3) Dynamically build the RI-CLPM syntax for 11 blocks
+
+# Identify block indices and variable names
+waves <- sort(unique(clpm_block$block))  # 1:11
+vars  <- c("Ipos","Ineg","Iaro")
+vc    <- sub("^I", "", vars)             # Clean names: "pos","neg","aro"
+
+# 3.1 Trait factors: each RI loads equally (1*) on all blocks
+trait <- sapply(seq_along(vars), function(i){
+  paste0("RI", vc[i], " =~ ",
+         paste0("1*", vars[i], "_b", waves, collapse=" + "))
+})
+
+# 3.2 De-mean by fixing intercepts of all observed block scores to zero
+ints <- unlist(lapply(vars, function(v){
+  paste0(v, "_b", waves, " ~ 0*1")
+}))
+
+# 3.3 Constrain residuals of observed blocks to be uncorrelated with their RI
+nocov <- unlist(lapply(vc, function(x){
+  paste0("I", x, "_b", waves, " ~~ 0*RI", x)
+}))
+
+# 3.4 Specify within-person lagged regression paths for blocks 2–11
+lags <- unlist(lapply(waves[-1], function(w){
+  w0 <- w-1
+  c(
+    sprintf("Ipos_b%d ~ a1*Ipos_b%d + b1*Ineg_b%d + b2*Iaro_b%d", w, w0, w0, w0),
+    sprintf("Ineg_b%d ~ a2*Ineg_b%d + c1*Ipos_b%d + c2*Iaro_b%d", w, w0, w0, w0),
+    sprintf("Iaro_b%d ~ a3*Iaro_b%d + d1*Ipos_b%d + d2*Ineg_b%d", w, w0, w0, w0)
+  )
+}))
+
+# 3.5 Combine all parts—each line separated by a newline—for lavaan
+model_blk_riclpm <- paste(c(trait, ints, nocov, lags), collapse="\n")
+
+# 4) Fit the block-based RI-CLPM
+fit_blk_riclpm <- sem(
+  model     = model_blk_riclpm,
+  data      = wide_blk,
+  estimator = "MLR"
+)
+
+# 5) Output summary with standardized estimates and fit indices
+summary(fit_blk_riclpm, standardized=TRUE, fit.measures=TRUE)
+
+```
+
+## Three-Timepoint RI-CLPM
+
+**Model Fit**  
+- CFI = 0.008, TLI = –0.19, RMSEA = 0.307, SRMR = 1.752 (poor overall fit)  
+- RIs nearly collinear (non–positive-definite latent covariances)
+
+**Trait Variance**  
+- RIpos Var = 8.75, RIneg Var = 5.46, RIaro Var = 14.27 (all _p_ < .001)
+
+**Within-Person Autoregression**  
+- **Positive affect** ($a_1$ = 0.359, _p_ = .001) and **negative affect** ($a_2$ = 0.717, _p_ < .001) show significant carry-over  
+- **Arousal** ($a_3$ = –0.003, _p_ = .974) no persistence
+
+**Cross-Lagged Effects**  
+- **Negative → Positive** ($b_1$ = 0.661, _p_ < .001)  
+- **Positive → Negative** ($c_1$ = 0.782, _p_ < .001)  
+- **Arousal → Positive** ($b_2$ = –0.752, _p_ < .001) and **Arousal → Negative** ($c_2$ = –1.079, _p_ < .001)
+- **Valence → Arousal** non-significant
+
+---
+
+## Block-Based RI-CLPM (11 Blocks)
+
+**Model Fit**  
+- CFI = 0.722, TLI = 0.732, RMSEA = 0.144, SRMR = 7.95 (exploratory)
+
+**Within-Person Autoregression**  
+- **Positive affect** mean-reversion ($a_1$ = –0.104, _p_ < .001)  
+- **Negative affect** mean-reversion ($a_2$ = –0.112, _p_ < .001)  
+- **Arousal** persistence ($a_3$ = 0.145, _p_ = .001)
+
+**Cross-Lagged Effects**  
+- **Negative → Positive** ($b_1$ = 0.239, _p_ < .001)  
+- **Positive → Negative** ($c_1$ = 0.252, _p_ < .001)  
+- **Arousal → Positive** ($b_2$ = –0.131, _p_ < .001) and **Arousal → Negative** ($c_2$ = –0.099, _p_ = .002)
+- **Positive → Arousal** ($d_1$ = –0.062, _p_ = .017) and **Negative → Arousal** ($d_2$ = –0.132, _p_ < .001)
+
+---
+
+## Causal Implications
+
+After removing trait variance and using strict lagged ordering, significant cross-lag paths represent **within-person causal dynamics**:
+
+- A spike in negative affect leads to a subsequent rise in positive affect.  
+- A spike in positive affect leads to a subsequent rise in negative affect.  
+- Elevated arousal suppresses both positive and negative affect on the next occasion.  
+
+> **Note**: Poor overall fit means these patterns should be interpreted as preliminary insights, pending model refinement and robustness checks.
+
+
+
+
+# trial.val -> inertia
+
+Whether stimulus type affects the intensity of inertia?
+
+```{r}
+
+
+```
+
+# Moderated CLPM
+
+```{r}
+
+
+```
+
+
