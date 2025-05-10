@@ -75,9 +75,31 @@ metrics_full <- subject_metrics %>%
 ```
 
 
+```{r}
+# 4. Multivariate tests to assess joint differences
+
+# MANOVA for emotion means
+manova_means <- manova(cbind(Ipos_mean, Ineg_mean, Iaro_mean) ~ sex + age + ethn,
+                       data=metrics_full)
+summary(manova_means, test="Wilks")
+
+# MANOVA for emotion SDs
+manova_sds <- manova(cbind(Ipos_sd, Ineg_sd, Iaro_sd) ~ sex + age + ethn,
+                     data=metrics_full)
+summary(manova_sds, test="Wilks")
+
+# MANOVA for reactivity measures
+react_vars <- grep("reac", names(metrics_full), value=TRUE)
+manova_reac <- manova(as.matrix(metrics_full[react_vars]) ~ sex + age + ethn,
+                      data=metrics_full)
+summary(manova_reac, test="Wilks")
+```
+
+- sex (p = 0.01341): multivariate sex differences in overall means of Ipos, Ineg, Iaro
+
 
 ```{r}
-# 4. Test group differences for each metric with Type III ANOVA
+# 5. Test group differences for each metric with Type III ANOVA
 
 # vector of metric names in metrics_full
 metrics <- c(
@@ -130,24 +152,68 @@ Signif. codes: **bold** = p < .05; · = p < .10 (trend)
 
 
 ```{r}
-# 5. Multivariate tests to assess joint differences
+# robust regression + FDR correction
 
-# MANOVA for emotion means
-manova_means <- manova(cbind(Ipos_mean, Ineg_mean, Iaro_mean) ~ sex + age + ethn,
-                       data=metrics_full)
-summary(manova_means, test="Wilks")
+library(MASS)
+library(boot)
 
-# MANOVA for emotion SDs
-manova_sds <- manova(cbind(Ipos_sd, Ineg_sd, Iaro_sd) ~ sex + age + ethn,
-                     data=metrics_full)
-summary(manova_sds, test="Wilks")
+# original p-values
+sex_effect_est <- numeric(length(metrics))
+sex_p_vals <- numeric(length(metrics))
+names(sex_effect_est) <- names(sex_p_vals) <- metrics
 
-# MANOVA for reactivity measures
-react_vars <- grep("reac", names(metrics_full), value=TRUE)
-manova_reac <- manova(as.matrix(metrics_full[react_vars]) ~ sex + age + ethn,
-                      data=metrics_full)
-summary(manova_reac, test="Wilks")
+for (i in seq_along(metrics)) {
+  m <- metrics[i]
+  cat("\n=== Robust Check: ", m, " ===\n")
+  
+  f <- as.formula(paste(m, "~ sex + age + ethn"))
+  fit_robust <- rlm(f, data = metrics_full)
+  summ <- summary(fit_robust)
+  
+  # sexfemale estimate & t value
+  est <- summ$coefficients["sexfemale", "Value"]
+  tval <- summ$coefficients["sexfemale", "t value"]
+  df <- nrow(metrics_full) - length(coef(fit_robust))
+  pval <- 2 * pt(-abs(tval), df)
+  
+  sex_effect_est[i] <- est
+  sex_p_vals[i] <- pval
+}
+
+# FDR correction
+sex_p_fdr <- p.adjust(sex_p_vals, method = "fdr")
+
+robust_summary <- data.frame(
+  Metric = metrics,
+  Estimate_sexfemale = round(sex_effect_est, 3),
+  P_unadj = signif(sex_p_vals, 3),
+  P_FDR = signif(sex_p_fdr, 3),
+  Significant = sex_p_fdr < 0.05
+)
+
+# View table
+print(robust_summary)
+
+
 ```
 
-- sex (p = 0.01341): multivariate sex differences in overall means of Ipos, Ineg, Iaro
+Interpretation
+
+- `Estimate_sexfemale` (robust regression estimate): how much higher or lower females scored compared to males
+- `P_unadj`: p-value from robust regression (unadjusted for multiple comparisons)
+- `P_FDR`: p-value after False Discovery Rate correction. Controls for multiple testing
+
+Result:
+
+- Unadjusted significance (p < 0.05)
+  - Ipos_sd (P_unadj = 0.0447, $\beta$ = 0.261)
+  - Ineg_mean (P_unadj = 0.0117, $\beta$ = 0.335)
+  - Ineg_sd (P_unadj = 0.0232, $\beta$ = 0.279)
+  - Ineg_reac_neg (P_unadj = 0.00894, $\beta$ = 0.675)
+  - These suggest that, compared to males:
+    - Females show higher dispersion (SD) in both positive and negative emotion
+    - Females have higher average negative emotion
+    - Females respond more strongly to negative stimuli (higher negative‐stimulus reactivity in negative emotion)
+
+- None of the 12 metrics reached statistical significance after FDR correction (P_FDR < 0.05)
 
