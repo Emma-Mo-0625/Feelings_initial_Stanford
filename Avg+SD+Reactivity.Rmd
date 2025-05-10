@@ -123,9 +123,10 @@ Signif. codes: **bold** = p < .05; · = p < .10 (trend)
 ¹ Although the omnibus Sex test for Ineg_sd was p = .051, the female vs. male contrast was significant at p = .019
 
 - Sex differences
-  - Emotion dispersion: Females show greater within-person dispersion SD in positive affect (`Ipos_sd`:$\beta$=+0.26, p=.037) and slightly greater negative affect (`Ineg_sd`:$\beta$=+0.28, p=.019)
-  - Emotion level: Females have higher average negative affect (`Ineg_mean`:$\beta$=+0.32, p=.010)
-  - Reactivity: Females show stronger negative‐stimulus reactivity in negative affect (`Ineg_reac_neg`: $\beta$=+0.67, p=.007)
+  - Emotion dispersion: Females show greater within-person dispersion SD in positive affect (`Ipos_sd`:$\beta$= 0.26, p=.037) and slightly greater negative affect (`Ineg_sd`:$\beta$= 0.28, p=.019)
+  - Emotion level: Females have higher average negative affect (`Ineg_mean`:$\beta$= 0.32, p=.010)
+  - Reactivity: Females show stronger negative‐stimulus reactivity in negative affect (`Ineg_reac_neg`: $\beta$= 0.67, p=.007)
+    - Compared to males, females have bigger increase in Ineg (negative emotion) following a negative stimulus (than the baseline--neutral stimulus)
 
 
 ```{r}
