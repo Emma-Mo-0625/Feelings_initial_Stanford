@@ -1,0 +1,152 @@
+---
+title: "Avg+SD+Reactivity"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 4
+    number_sections: true
+  html_notebook: default
+---
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(car)     # for Type III ANOVA (Anova)
+library(lme4)    # only if you prefer mixed‐models
+```
+
+```{r}
+# assume `dat` is already loaded and has columns: subj, trial.num, trial.val, sex, age, ethn, Ipos, Ineg, Iaro
+feelings_initial <- load("feelings_initial.RData")
+
+# 1. Compute within‐subject mean & SD for each emotion
+subject_metrics <- dat %>%
+  group_by(subj) %>%
+  summarise(
+    Ipos_mean = mean(Ipos, na.rm=TRUE), # average positive affect per subject
+    Ineg_mean = mean(Ineg, na.rm=TRUE),
+    Iaro_mean = mean(Iaro, na.rm=TRUE),
+    Ipos_sd   = sd(Ipos,   na.rm=TRUE), # within‐subject dispersion of positive affect
+    Ineg_sd   = sd(Ineg,   na.rm=TRUE),
+    Iaro_sd   = sd(Iaro,   na.rm=TRUE),
+    .groups   = "drop"
+  )
+```
+
+
+```{r}
+# 2. Compute per‐subject emotion reactivity: change from neutral
+condition_means <- dat %>%
+  group_by(subj, trial.val) %>%
+  summarise(
+    Ipos_m = mean(Ipos, na.rm=TRUE), # mean positive affect under each stimulus
+    Ineg_m = mean(Ineg, na.rm=TRUE), # mean negative affect under each stimulus
+    Iaro_m = mean(Iaro, na.rm=TRUE), # mean arousal under each stimulus
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    id_cols    = subj,
+    names_from = trial.val,
+    values_from= c(Ipos_m, Ineg_m, Iaro_m)
+  ) %>%
+  mutate(
+  Ipos_reac_pos = Ipos_m_pos - Ipos_m_neu,  # increase in Ipos following a positive stimulus vs. neutral stimulus
+  Ipos_reac_neg = Ipos_m_neg - Ipos_m_neu,  # increase in Ipos following a negative stimulus vs. neutral stimulus
+  Ineg_reac_pos = Ineg_m_pos - Ineg_m_neu,  # increase in Ineg following a positive stimulus vs. neutral stimulus
+  Ineg_reac_neg = Ineg_m_neg - Ineg_m_neu,  # increase in Ineg following a negative stimulus vs. neutral stimulus
+  Iaro_reac_pos = Iaro_m_pos - Iaro_m_neu,  # increase in Iaro following a positive stimulus vs. neutral stimulus
+  Iaro_reac_neg = Iaro_m_neg - Iaro_m_neu   # increase in Iaro following a negative stimulus vs. neutral stimulus
+)
+
+```
+
+
+
+```{r}
+# 3. Merge computed metrics with demographics
+demo <- dat %>%
+  select(subj, sex, age, ethn) %>%
+  distinct()                         # one row per subject
+
+metrics_full <- subject_metrics %>%
+  left_join(condition_means, by="subj") %>%  # add reactivity scores
+  left_join(demo, by="subj")                # add sex, age, ethnicity
+
+```
+
+
+
+```{r}
+# 4. Test group differences for each metric with Type III ANOVA
+
+# vector of metric names in metrics_full
+metrics <- c(
+  "Ipos_mean", "Ipos_sd", "Ipos_reac_pos", "Ipos_reac_neg",
+  "Ineg_mean", "Ineg_sd", "Ineg_reac_pos", "Ineg_reac_neg",
+  "Iaro_mean", "Iaro_sd", "Iaro_reac_pos", "Iaro_reac_neg"
+)
+
+# for each metric, fit lm(metric ~ sex + age + ethn), print ANOVA and coefficients
+for (m in metrics) {
+  cat("\n=== Metric:", m, "===\n")
+  # build the formula dynamically
+  f <- as.formula(paste(m, "~ sex + age + ethn"))
+  fit <- lm(f, data = metrics_full)
+  # Type III omnibus tests
+  print(Anova(fit, type = "III"))
+  # parameter estimates
+  print(coef(summary(fit)))
+}
+
+```
+
+
+Based on the Type III ANOVA results in the provided PDF :contentReference[oaicite:0]{index=0}:contentReference[oaicite:1]{index=1}, the following group‐difference summary emerges:
+
+| Metric             | Sex p    | Age p   | Ethnicity p | Significant Effect                   |
+|--------------------|---------:|--------:|------------:|--------------------------------------|
+| **Ipos_mean**      | 0.084    | 0.314   | 0.072       | —                                    |
+| **Ipos_sd**        | **0.048**| 0.167   | 0.186       | Females > Males ($\beta$=+0.26, p=.037)     |
+| **Ipos_reac_pos**  | 0.092    | 0.318   | 0.113       | —                                    |
+| **Ipos_reac_neg**  | 0.565    | 0.911   | 0.306       | —                                    |
+| **Ineg_mean**      | **0.035**| 0.932   | 0.274       | Females > Males ($\beta$=+0.32, p=.010)     |
+| **Ineg_sd**        | 0.051·   | 0.183   | 0.501       | Females > Males ($\beta$=+0.28, p=.019)¹    |
+| **Ineg_reac_pos**  | 0.355    | 0.913   | 0.254       | —                                    |
+| **Ineg_reac_neg**  | **0.025**| 0.373   | 0.344       | Females > Males ($\beta$=+0.67, p=.007)     |
+| **Iaro_mean**      | 0.247    | 0.425   | 0.755       | —                                    |
+| **Iaro_sd**        | 0.679    | 0.555   | 0.968       | —                                    |
+| **Iaro_reac_pos**  | 0.324    | 0.901   | 0.579       | —                                    |
+| **Iaro_reac_neg**  | 0.191    | 0.386   | 0.954       | —                                    |
+
+Signif. codes: **bold** = p < .05; · = p < .10 (trend)
+
+¹ Although the omnibus Sex test for Ineg_sd was p = .051, the female vs. male contrast was significant at p = .019
+
+- Sex differences
+  - Emotion dispersion: Females show greater within-person dispersion SD in positive affect (`Ipos_sd`:$\beta$=+0.26, p=.037) and slightly greater negative affect (`Ineg_sd`:$\beta$=+0.28, p=.019)
+  - Emotion level: Females have higher average negative affect (`Ineg_mean`:$\beta$=+0.32, p=.010)
+  - Reactivity: Females show stronger negative‐stimulus reactivity in negative affect (`Ineg_reac_neg`: $\beta$=+0.67, p=.007)
+
+
+```{r}
+# 5. Multivariate tests to assess joint differences
+
+# MANOVA for emotion means
+manova_means <- manova(cbind(Ipos_mean, Ineg_mean, Iaro_mean) ~ sex + age + ethn,
+                       data=metrics_full)
+summary(manova_means, test="Wilks")
+
+# MANOVA for emotion SDs
+manova_sds <- manova(cbind(Ipos_sd, Ineg_sd, Iaro_sd) ~ sex + age + ethn,
+                     data=metrics_full)
+summary(manova_sds, test="Wilks")
+
+# MANOVA for reactivity measures
+react_vars <- grep("reac", names(metrics_full), value=TRUE)
+manova_reac <- manova(as.matrix(metrics_full[react_vars]) ~ sex + age + ethn,
+                      data=metrics_full)
+summary(manova_reac, test="Wilks")
+```
+
+- sex (p = 0.01341): multivariate sex differences in overall means of Ipos, Ineg, Iaro
+
