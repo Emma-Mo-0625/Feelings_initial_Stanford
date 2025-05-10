@@ -6,6 +6,7 @@ output:
     toc: true
     toc_depth: 4
     number_sections: true
+  html_notebook: default
 fontsize: 11pt
 geometry: margin=1in
 ---
@@ -955,7 +956,7 @@ summary(fit_clpm_sex, standardized = TRUE, fit.measures = TRUE)
 ```
 
 - Most of the paths are similar between men and women
-- Only arousal inertia for women is slightly higher than men
+- Only arousal inertia for women is slightly higher than men (non-significant)
 
 ```{r}
 # Check for significant difference between men and women
@@ -996,8 +997,8 @@ pe <- parameterEstimates(fit_clpm_sex, standardized = TRUE)
 pe[c(3, 30, 57), c("lhs", "op", "rhs", "group", "est", "std.all")]
 ```
 
-- females (0.413) and males (0.402) are significantly different in arousal inertia
-- females (0.413) and other (0.356) are also significantly different in arousal inertia
+- females (0.413) and males (0.402) are significantly different in arousal inertia (p < 0.001)
+- females (0.413) and other (0.356) are also significantly different in arousal inertia (p = 0.001)
 
 #### Difference in paths by ethnicity
 
@@ -1017,20 +1018,20 @@ summary(fit_multigroup_free, standardized = TRUE)
   - Both prior positive ($\beta$ = –.05, p = .031) and negative emotion ($\beta$ = –.08, p < .001) significantly reduced subsequent arousal
 
 - Black/African American:
-  - Strongest Ipos inertia (0.187) among all groups
-  - Arousal -> Positive emotion path is negative and significant (-0.085), suggesting arousal suppresses positivity here
+  - Strongest Ipos inertia ($\beta$ = .187) among all groups (p < .001)
+  - Arousal -> Positive emotion path is negative and significant ($\beta$=-.085, p = .012), suggesting arousal suppresses positivity here
 
 - Latino/Hispanic:
-  - Uniquely positive effect from prior arousal to later positive emotion (0.189).
-  - Had the strongest Iaro inertia (0.483).
+  - Uniquely positive effect from prior arousal to later positive emotion ($\beta$ = .189, p < .001).
+  - Had the strongest Iaro inertia ($\beta$ = .483, p < .001).
 
 - White/Caucasian:
-  - Negative cross-effects from both Ipos to Iaro (-0.078) and Ineg to Iaro (-0.090), showing a strong regulatory suppression of arousal by both emotion valences.
+  - Negative cross-effects from both Ipos to Iaro ($\beta$ = -.104, p < .001) and Ineg to Iaro ($\beta$ = -.119, p < .001), showing a strong regulatory suppression of arousal by both emotion valences.
   - Effects tend to be more stable across emotional domains.
 
 - American Indian/Native American or Alaskan Native:
   - The highest negative emotion inertia ($\beta$ = .21, p = .005)
-  - The only group where prior negative emotion significantly increased arousal ($\beta$ = .16, p = .037)"
+  - The only group where prior negative emotion significantly increased arousal ($\beta$ = .16, p = .037)
 
 #### Difference in paths by age
 
@@ -1079,6 +1080,6 @@ print(results)
 
 - Ipos_on_Ineg: As age increases, negative emotion exerts a stronger influence on subsequent positive emotion (r = 0.124, p < .001)
 - Ipos_on_Aro: Higher arousal increasingly boosts next-step positive emotion with greater age (r = 0.202, p < .001)
-- Ineg_on_Aro: Higher arousal is linked with lower next-step negative emotion, especially as age increases
+- Ineg_on_Aro: Higher arousal is linked with lower next-step negative emotion, especially as age increases (r = -0.215, p < .001)
 - Iaro_on_Ineg: With age, the influence of negative emotion on subsequent arousal slightly decreases (r = -0.038, p < .001)
 
