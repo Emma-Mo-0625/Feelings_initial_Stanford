@@ -699,6 +699,7 @@ inertia_full %>%
 ```
 
 On average (without checking for statistical significance):
+
 - **American Indian/Native American or Alaskan Native: the only group with neg_inertia > 0 (0.086) -> tend to stay in negative states longer**
 - **Black/African American: the only group with pos_inertia > 0 (0.007) -> tend to stay in positive states longer (which is unexpected)**
 - **White/Caucasian: the only group with inertia < 0 across all three emotions (general pos, neg, aro) -> tend to bounce back quickly overall (emotionally adaptive).**
@@ -738,6 +739,7 @@ anova_ethn_results
 ```
 
 2 types show statistically significant difference:
+
 - neg_inertia_neu: p = 0.0317
 - neg_inertia_pos: p = 0.0243
 
@@ -932,8 +934,8 @@ summary(fit_clpm, standardized = TRUE, fit.measures = TRUE)
 
 - Ipos ~ Ineg_lag1 ($\beta$ = 0.166, p < .001): negative emotion predicts positive emotion in the next moment, which might reflect emotional rebound
 - Ineg ~ Ipos_lag1 ($\beta$ = 0.172, p < .001): positive emotion enhances negative emotion in the next moment, which might reflect emotional mix or trial order effect
-- Iaro ~ Ipos_lag1 ($\beta$ = -0.053): positive emotion decreases arousal at the later stage
-- Iaro ~ Ineg_lag1 ($\beta$ = -0.078): negative emotion decreases arousal at the later stage
+- Iaro ~ Ipos_lag1 ($\beta$ = -0.053, p < .001): positive emotion decreases arousal at the later stage
+- Iaro ~ Ineg_lag1 ($\beta$ = -0.078, p < .001): negative emotion decreases arousal at the later stage
 - Ipos ~ Iaro_lag1 and Ineg ~ Iaro_lag1 are not significant
 
 - Conclusion: 
