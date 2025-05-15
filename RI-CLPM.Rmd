@@ -50,7 +50,7 @@ summary(fit_clpm, standardized = TRUE, fit.measures = TRUE)
 - Ineg ~ Ipos_lag1 ($\beta$ = 0.172, p < .001): positive emotion enhances negative emotion in the next moment, which might reflect emotional mix or trial order effect
 - Iaro ~ Ipos_lag1 ($\beta$ = -0.053, p < .001): positive emotion decreases arousal at the later stage
 - Iaro ~ Ineg_lag1 ($\beta$ = -0.078, p < .001): negative emotion decreases arousal at the later stage
-- Ipos ~ Iaro_lag1 and Ineg ~ Iaro_lag1 are not significant
+- Ipos ~ Iaro_lag1 (p = 0.427) and Ineg ~ Iaro_lag1 (p = 0.516) are not significant
 
 - Conclusion: 
   - **Both positive and negative emotions predict more of the opposite in the next moment**
