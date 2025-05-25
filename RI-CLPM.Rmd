@@ -412,13 +412,3 @@ After removing trait variance and using strict lagged ordering, significant cros
 
 
 
-
-# trial.val -> inertia
-
-Whether stimulus type affects the intensity of inertia?
-
-```{r}
-
-
-```
-
