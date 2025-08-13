@@ -191,17 +191,3 @@ Iaro ~ trial.val + sex + age + ethn + (1 | subj)
 │   └── Avg+SD+Reactivity.pdf
 ├── README.md
 ```
-
----
-
-## 📌 Citation
-
-If you use this dataset or analysis scripts in your work, please cite the corresponding GitHub repository and credit the original researchers.
-
----
-
-## 📬 Contact
-
-For questions, feedback, or collaborations, please reach out via [GitHub Issues](https://github.com/your_username/your_repo/issues).
-
----
