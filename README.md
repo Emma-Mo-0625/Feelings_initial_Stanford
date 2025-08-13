@@ -60,15 +60,9 @@ To analyze emotional responses in terms of **negative affect**, **positive affec
 
 ## 🔍 Analyses
 
-### (1) **Affective Inertia Comparison**
-
+### (0) **Linear Mixed-Effects Models (LME)**
 - **goal**: Since different participants have different baseline emotions, multilevel modeling accounted for repeated trials nested within participants (random intercept for subject).
-- **File:** `feelings_initial.Rmd`, `feelings_initial.pdf`
-- **Methods:**
-  - Linear Mixed-Effects Models (LME)
-  - Autoregressive modeling (lag-1 coefficients)
-  - Pairwise t-tests, MANOVA, ANOVA, Bonferroni correction
-- **Tools:** `dplyr`, `base R`, `lme4`
+- **R Packages**: `lme4` (lmer function)
 
 #### 🧪 Model Specifications
 ```R
@@ -76,6 +70,22 @@ Ineg ~ trial.val + sex + age + ethn + (1 | subj)
 Ipos ~ trial.val + sex + age + ethn + (1 | subj)
 Iaro ~ trial.val + sex + age + ethn + (1 | subj)
 ```
+
+### (1) **Affective Inertia Comparison**
+
+- **File:** `feelings_initial.Rmd`, `feelings_initial.pdf`
+- **Methods:**
+  - Autoregressive modeling (lag-1 coefficients)
+  - 12 inertia scores per participant (pos, neg, aro × overall + by trial type for Ineg, Ipos, Iaro)
+  - Pairwise t-tests, MANOVA, ANOVA, Bonferroni correction
+- **steps**
+  - Tested for skewness and normality (Shapiro test).
+  - Normalized skewed inertia types with `orderNorm`.
+  - Conducted pairwise t-tests to compare inertia under different stimuli
+  - Find Cohen’s d, ANOVA, partial η² for effect size
+  - Use Bonferroni for robust check
+  - Use MANOVA to check inertia differences between demographic groups
+- **Tools:** `dplyr`, `base R`
 
 #### 📈 Key Results:
 - **Inertia Scores** (Mean):
@@ -95,20 +105,11 @@ Iaro ~ trial.val + sex + age + ethn + (1 | subj)
 
 #### 🔁 Model Paths
 - **Autoregressive:**
-  - lag-1 regression coefficients as inertia scores
-  - 12 inertia scores per participant (pos, neg, aro × overall + by trial type for Ineg, Ipos, Iaro)
   - `Ipos ~ Ipos_lag1`, `Ineg ~ Ineg_lag1`, `Iaro ~ Iaro_lag1`,etc.
 - **Cross-lagged:**
   - `Ipos ~ Ineg_lag1 + Iaro_lag1`
   - `Ineg ~ Ipos_lag1 + Iaro_lag1`
   - `Iaro ~ Ipos_lag1 + Ineg_lag1`
-- **steps**
-  - Tested for skewness and normality (Shapiro test).
-  - Normalized skewed inertia types with `orderNorm`.
-  - Conducted pairwise t-tests to compare inertia under different stimuli
-  - Find Cohen’s d, ANOVA, partial η² for effect size
-  - Use Bonferroni for robust check
-  - Use MANOVA to check inertia differences between demographic groups
 
 #### 🔍 Findings:
 - **Positive ↔ Negative Affect**: Reciprocal prediction
