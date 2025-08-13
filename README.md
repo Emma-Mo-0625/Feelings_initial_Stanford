@@ -105,7 +105,7 @@ Iaro ~ trial.val + sex + age + ethn + (1 | subj)
 
 #### 🔁 Model Paths
 - **Autoregressive:**
-  - `Ipos ~ Ipos_lag1`, `Ineg ~ Ineg_lag1`, `Iaro ~ Iaro_lag1`,etc.
+  - `Ipos ~ Ipos_lag1`, `Ineg ~ Ineg_lag1`, `Iaro ~ Iaro_lag1`
 - **Cross-lagged:**
   - `Ipos ~ Ineg_lag1 + Iaro_lag1`
   - `Ineg ~ Ipos_lag1 + Iaro_lag1`
