@@ -62,6 +62,7 @@ To analyze emotional responses in terms of **negative affect**, **positive affec
 
 ### (1) **Affective Inertia Comparison**
 
+- **goal**: Since different participants have different baseline emotions, multilevel modeling accounted for repeated trials nested within participants (random intercept for subject).
 - **File:** `feelings_initial.Rmd`, `feelings_initial.pdf`
 - **Methods:**
   - Linear Mixed-Effects Models (LME)
@@ -94,11 +95,20 @@ Iaro ~ trial.val + sex + age + ethn + (1 | subj)
 
 #### 🔁 Model Paths
 - **Autoregressive:**
-  - `Ipos ~ Ipos_lag1`, `Ineg ~ Ineg_lag1`, `Iaro ~ Iaro_lag1`
+  - lag-1 regression coefficients as inertia scores
+  - 12 inertia scores per participant (pos, neg, aro × overall + by trial type for Ineg, Ipos, Iaro)
+  - `Ipos ~ Ipos_lag1`, `Ineg ~ Ineg_lag1`, `Iaro ~ Iaro_lag1`,etc.
 - **Cross-lagged:**
   - `Ipos ~ Ineg_lag1 + Iaro_lag1`
   - `Ineg ~ Ipos_lag1 + Iaro_lag1`
   - `Iaro ~ Ipos_lag1 + Ineg_lag1`
+- **steps**
+  - Tested for skewness and normality (Shapiro test).
+  - Normalized skewed inertia types with `orderNorm`.
+  - Conducted pairwise t-tests to compare inertia under different stimuli
+  - Find Cohen’s d, ANOVA, partial η² for effect size
+  - Use Bonferroni for robust check
+  - Use MANOVA to check inertia differences between demographic groups
 
 #### 🔍 Findings:
 - **Positive ↔ Negative Affect**: Reciprocal prediction
@@ -123,7 +133,7 @@ Iaro ~ trial.val + sex + age + ethn + (1 | subj)
 
 - **File:** `Avg+SD+Reactivity.Rmd`, `Avg+SD+Reactivity.pdf`
 - **Goals:**
-  - Compute within-person **mean**, **standard deviation**, and **reactivity**
+  - Compute within-person **mean**, **standard deviation**, and **reactivity** to different stimulus types (positive, negative, neutral)
   - Compare across sex, age, and ethnicity
 
 #### 🧮 Metrics:
@@ -133,9 +143,9 @@ Iaro ~ trial.val + sex + age + ethn + (1 | subj)
   - `*_reac_pos`, `*_reac_neg` (difference from neutral trials)
 
 #### 🔍 Analysis Pipeline:
-1. **MANOVA** (Wilks’ Lambda) on all metrics
-2. **Type III ANOVA**: `lm(metric ~ sex + age + ethn)`
-3. **Robust regression** (rlm) + FDR correction
+1. **MANOVA** (Wilks’ Lambda) on all metrics --> to see if there’s any difference between any groups
+2. **Type III ANOVA**: for each of the mean, sd, reactivity, run `lm(metric ~ sex + age + ethn)` --> to see which groups are different
+3. **Robust regression** (rlm) + FDR correction, across multiple tests to avoid false positives
 
 #### 📈 Key Findings:
 - **Females**: Higher negative affect, more variability, stronger reactivity
